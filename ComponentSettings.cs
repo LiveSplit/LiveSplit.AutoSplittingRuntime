@@ -10,12 +10,17 @@ using System.Windows.Forms;
 using System.Xml;
 using LiveSplit.UI;
 using System.IO;
+using LiveSplit.Options;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using LiveSplit.Model;
 
 namespace LiveSplit.AutoSplittingRuntime
 {
     public partial class ComponentSettings : UserControl
     {
         public string ScriptPath { get; set; }
+
+        public Runtime runtime = null;
 
         // if true, next path loaded from settings will be ignored
         private bool _ignore_next_path_setting;
@@ -38,8 +43,24 @@ namespace LiveSplit.AutoSplittingRuntime
         // Start/Reset/Split checkboxes
         private Dictionary<string, bool> _basic_settings_state;
 
+        // Custom settings
+        public Dictionary<string, bool> _custom_settings_state;
 
-        public ComponentSettings()
+        private static readonly LogDelegate log = (messagePtr, messageLen) =>
+        {
+            var message = ASRString.FromPtrLen(messagePtr, messageLen);
+            Log.Info($"[Auto Splitting Runtime] {message}");
+        };
+
+        private readonly StateDelegate getState;
+        private readonly Action start;
+        private readonly Action split;
+        private readonly Action reset;
+        private readonly SetGameTimeDelegate setGameTime;
+        private readonly Action pauseGameTime;
+        private readonly Action resumeGameTime;
+
+        public ComponentSettings(TimerModel model)
         {
             InitializeComponent();
 
@@ -57,13 +78,102 @@ namespace LiveSplit.AutoSplittingRuntime
             };
 
             _basic_settings_state = new Dictionary<string, bool>();
+            _custom_settings_state = new Dictionary<string, bool>();
+
+            getState = () =>
+            {
+                switch (model.CurrentState.CurrentPhase)
+                {
+                    case TimerPhase.NotRunning: return 0;
+                    case TimerPhase.Running: return 1;
+                    case TimerPhase.Paused: return 2;
+                    case TimerPhase.Ended: return 3;
+                }
+                return 0;
+            };
+            start = () => model.Start();
+            split = () => model.Split();
+            reset = () => model.Reset();
+            setGameTime = (ticks) => model.CurrentState.SetGameTime(new TimeSpan(ticks));
+            pauseGameTime = () => model.CurrentState.IsGameTimePaused = true;
+            resumeGameTime = () => model.CurrentState.IsGameTimePaused = false;
         }
 
-        public ComponentSettings(string scriptPath)
-            : this()
+        public ComponentSettings(TimerModel model, string scriptPath)
+            : this(model)
         {
             ScriptPath = scriptPath;
             _ignore_next_path_setting = true;
+        }
+
+        public void ReloadRuntime()
+        {
+            try
+            {
+                if (runtime != null)
+                {
+                    runtime.Dispose();
+                    runtime = null;
+                }
+
+                if (!string.IsNullOrEmpty(ScriptPath))
+                {
+                    var settingsStore = new SettingsStore();
+
+                    foreach (var pair in _custom_settings_state)
+                    {
+                        settingsStore.Set(pair.Key, pair.Value);
+                    }
+
+                    runtime = new Runtime(
+                        ScriptPath,
+                        settingsStore,
+                        getState,
+                        start,
+                        split,
+                        reset,
+                        setGameTime,
+                        pauseGameTime,
+                        resumeGameTime,
+                        log
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex);
+            }
+        }   
+
+        private void BuildTree()
+        {
+            this.treeCustomSettings.BeginUpdate();
+            this.treeCustomSettings.Nodes.Clear();
+
+            if (runtime != null)
+            {
+
+                var len = runtime.UserSettingsLength();
+                for (ulong i = 0; i < len; i++)
+                {
+                    var key = runtime.UserSettingGetKey(i);
+                    var desc = runtime.UserSettingGetDescription(i);
+                    var ty = runtime.UserSettingGetType(i);
+
+                    if (ty != "bool") continue;
+
+                    var value = runtime.UserSettingGetBool(i);
+
+                    var node = new TreeNode(desc)
+                    {
+                        Tag = key,
+                        Checked = value,
+                    };
+                    this.treeCustomSettings.Nodes.Add(node);
+                }
+            }
+
+            this.treeCustomSettings.EndUpdate();
         }
 
         public XmlNode GetSettings(XmlDocument document)
@@ -88,7 +198,9 @@ namespace LiveSplit.AutoSplittingRuntime
                     ScriptPath = SettingsHelper.ParseString(element["ScriptPath"], string.Empty);
                 _ignore_next_path_setting = false;
                 ParseBasicSettingsFromXml(element);
+                ParseCustomSettingsFromXml(element);
             }
+            ReloadRuntime();
         }
 
         /// <summary>
@@ -113,6 +225,7 @@ namespace LiveSplit.AutoSplittingRuntime
             if (string.IsNullOrWhiteSpace(ScriptPath))
             {
                 _basic_settings_state.Clear();
+                _custom_settings_state.Clear();
             }
 
             InitBasicSettings(settings);
@@ -146,6 +259,38 @@ namespace LiveSplit.AutoSplittingRuntime
                     _basic_settings_state[item.Key.ToLower()] = value;
                 }
             }
+        }
+
+        /// <summary>
+        /// Parses custom settings, stores them and updates the checked state of already added tree nodes.
+        /// </summary>
+        /// 
+        private void ParseCustomSettingsFromXml(XmlElement data)
+        {
+            XmlElement custom_settings_node = data["CustomSettings"];
+
+            _custom_settings_state.Clear();
+
+            if (custom_settings_node != null && custom_settings_node.HasChildNodes)
+            {
+                foreach (XmlElement element in custom_settings_node.ChildNodes)
+                {
+                    if (element.Name != "Setting")
+                        continue;
+
+                    string id = element.Attributes["id"].Value;
+                    string type = element.Attributes["type"].Value;
+
+                    if (id != null && type == "bool")
+                    {
+                        bool value = SettingsHelper.ParseBool(element);
+                        _custom_settings_state[id] = value;
+                    }
+                }
+            }
+
+            //// Update tree with loaded state (in case the tree is already populated)
+            //UpdateNodesCheckedState(_custom_settings_state);
         }
 
         private void InitBasicSettings(ASRSettings settings)
@@ -234,14 +379,16 @@ namespace LiveSplit.AutoSplittingRuntime
         //    }, nodes);
         //}
 
-        //private void UpdateNodeCheckedState(Func<ASRSetting, bool> func, TreeNode node)
-        //{
-        //    var setting = (ASRSetting)node.Tag;
-        //    bool check = func(setting);
+        private void UpdateNodeCheckedState(bool value, TreeNode node)
+        {
+            var key = (string)node.Tag;
 
-        //    if (node.Checked != check)
-        //        node.Checked = check;
-        //}
+            if (node.Checked != value)
+            {
+                _custom_settings_state[key] = value;
+                ReloadRuntime();
+            }
+        }
 
 
         // Events
@@ -275,6 +422,61 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 setting.Value = checkbox.Checked;
                 _basic_settings_state[setting.Id] = setting.Value;
+            }
+        }
+
+        private void ComponentSettings_Load(object sender, EventArgs e)
+        {
+            BuildTree();
+        }
+
+        // Custom Setting checked/unchecked (only after initially building the tree)
+        private void settingsTree_AfterCheck(object sender, TreeViewEventArgs e)
+        {
+            _custom_settings_state[(string)e.Node.Tag] = e.Node.Checked;
+            ReloadRuntime();
+        }
+
+        private void cmiCheckBranch_Click(object sender, EventArgs e)
+        {
+            UpdateNodeCheckedState(true, this.treeCustomSettings.SelectedNode);
+        }
+
+        private void cmiUncheckBranch_Click(object sender, EventArgs e)
+        {
+            UpdateNodeCheckedState(false, this.treeCustomSettings.SelectedNode);
+        }
+    }
+}
+
+namespace LiveSplit.UI.Components
+{
+    /// <summary>
+    /// TreeView with fixed double-clicking on checkboxes.
+    /// </summary>
+    /// 
+    /// See also:
+    /// http://stackoverflow.com/questions/17356976/treeview-with-checkboxes-not-processing-clicks-correctly
+    /// http://stackoverflow.com/questions/14647216/c-sharp-treeview-ignore-double-click-only-at-checkbox
+    class NewTreeView : System.Windows.Forms.TreeView
+    {
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == 0x203) // identified double click
+            {
+                var local_pos = PointToClient(Cursor.Position);
+                var hit_test_info = HitTest(local_pos);
+
+                if (hit_test_info.Location == TreeViewHitTestLocations.StateImage)
+                {
+                    m.Msg = 0x201; // if checkbox was clicked, turn into single click
+                }
+
+                base.WndProc(ref m);
+            }
+            else
+            {
+                base.WndProc(ref m);
             }
         }
     }

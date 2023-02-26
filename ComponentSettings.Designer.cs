@@ -1,4 +1,4 @@
-﻿using System.Windows.Forms;
+﻿using LiveSplit.UI.Components;
 
 namespace LiveSplit.AutoSplittingRuntime
 {
@@ -35,11 +35,17 @@ namespace LiveSplit.AutoSplittingRuntime
             this.labelScriptPath = new System.Windows.Forms.Label();
             this.btnSelectFile = new System.Windows.Forms.Button();
             this.txtScriptPath = new System.Windows.Forms.TextBox();
+            this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
+            this.btnCheckAll = new System.Windows.Forms.Button();
+            this.btnUncheckAll = new System.Windows.Forms.Button();
+            this.btnResetToDefault = new System.Windows.Forms.Button();
             this.flowLayoutPanel2 = new System.Windows.Forms.FlowLayoutPanel();
             this.checkboxStart = new System.Windows.Forms.CheckBox();
             this.checkboxSplit = new System.Windows.Forms.CheckBox();
             this.checkboxReset = new System.Windows.Forms.CheckBox();
             this.labelOptions = new System.Windows.Forms.Label();
+            this.labelCustomSettings = new System.Windows.Forms.Label();
+            this.treeCustomSettings = new LiveSplit.UI.Components.NewTreeView();
             this.treeContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.cmiExpandTree = new System.Windows.Forms.ToolStripMenuItem();
             this.cmiCollapseTree = new System.Windows.Forms.ToolStripMenuItem();
@@ -60,6 +66,7 @@ namespace LiveSplit.AutoSplittingRuntime
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.resetSettingToDefaultToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tableLayoutPanel1.SuspendLayout();
+            this.flowLayoutPanel1.SuspendLayout();
             this.flowLayoutPanel2.SuspendLayout();
             this.treeContextMenu.SuspendLayout();
             this.treeContextMenu2.SuspendLayout();
@@ -75,8 +82,11 @@ namespace LiveSplit.AutoSplittingRuntime
             this.tableLayoutPanel1.Controls.Add(this.labelScriptPath, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.btnSelectFile, 2, 0);
             this.tableLayoutPanel1.Controls.Add(this.txtScriptPath, 1, 0);
+            this.tableLayoutPanel1.Controls.Add(this.flowLayoutPanel1, 1, 3);
             this.tableLayoutPanel1.Controls.Add(this.flowLayoutPanel2, 1, 1);
             this.tableLayoutPanel1.Controls.Add(this.labelOptions, 0, 1);
+            this.tableLayoutPanel1.Controls.Add(this.labelCustomSettings, 0, 2);
+            this.tableLayoutPanel1.Controls.Add(this.treeCustomSettings, 1, 2);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(7, 7);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -117,6 +127,49 @@ namespace LiveSplit.AutoSplittingRuntime
             this.txtScriptPath.Name = "txtScriptPath";
             this.txtScriptPath.Size = new System.Drawing.Size(300, 20);
             this.txtScriptPath.TabIndex = 0;
+            // 
+            // flowLayoutPanel1
+            // 
+            this.flowLayoutPanel1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.flowLayoutPanel1.AutoSize = true;
+            this.tableLayoutPanel1.SetColumnSpan(this.flowLayoutPanel1, 2);
+            this.flowLayoutPanel1.Controls.Add(this.btnCheckAll);
+            this.flowLayoutPanel1.Controls.Add(this.btnUncheckAll);
+            this.flowLayoutPanel1.Controls.Add(this.btnResetToDefault);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(205, 457);
+            this.flowLayoutPanel1.Name = "flowLayoutPanel1";
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(254, 29);
+            this.flowLayoutPanel1.TabIndex = 8;
+            // 
+            // btnCheckAll
+            // 
+            this.btnCheckAll.Location = new System.Drawing.Point(3, 3);
+            this.btnCheckAll.Name = "btnCheckAll";
+            this.btnCheckAll.Size = new System.Drawing.Size(62, 23);
+            this.btnCheckAll.TabIndex = 5;
+            this.btnCheckAll.Text = "Check All";
+            this.btnCheckAll.UseVisualStyleBackColor = true;
+            // 
+            // btnUncheckAll
+            // 
+            this.btnUncheckAll.AutoSize = true;
+            this.btnUncheckAll.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.btnUncheckAll.Location = new System.Drawing.Point(71, 3);
+            this.btnUncheckAll.Name = "btnUncheckAll";
+            this.btnUncheckAll.Size = new System.Drawing.Size(75, 23);
+            this.btnUncheckAll.TabIndex = 6;
+            this.btnUncheckAll.Text = "Uncheck All";
+            this.btnUncheckAll.UseVisualStyleBackColor = true;
+            // 
+            // btnResetToDefault
+            // 
+            this.btnResetToDefault.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnResetToDefault.Location = new System.Drawing.Point(152, 3);
+            this.btnResetToDefault.Name = "btnResetToDefault";
+            this.btnResetToDefault.Size = new System.Drawing.Size(99, 23);
+            this.btnResetToDefault.TabIndex = 7;
+            this.btnResetToDefault.Text = "Reset to Default";
+            this.btnResetToDefault.UseVisualStyleBackColor = true;
             // 
             // flowLayoutPanel2
             // 
@@ -174,20 +227,118 @@ namespace LiveSplit.AutoSplittingRuntime
             this.labelOptions.TabIndex = 9;
             this.labelOptions.Text = "Options:";
             // 
+            // labelCustomSettings
+            // 
+            this.labelCustomSettings.AutoSize = true;
+            this.labelCustomSettings.Location = new System.Drawing.Point(3, 63);
+            this.labelCustomSettings.Margin = new System.Windows.Forms.Padding(3, 5, 3, 0);
+            this.labelCustomSettings.Name = "labelCustomSettings";
+            this.labelCustomSettings.Size = new System.Drawing.Size(59, 13);
+            this.labelCustomSettings.TabIndex = 13;
+            this.labelCustomSettings.Text = "Advanced:";
+            // 
+            // treeCustomSettings
+            // 
+            this.treeCustomSettings.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.treeCustomSettings.CheckBoxes = true;
+            this.tableLayoutPanel1.SetColumnSpan(this.treeCustomSettings, 2);
+            this.treeCustomSettings.Location = new System.Drawing.Point(79, 61);
+            this.treeCustomSettings.Name = "treeCustomSettings";
+            this.treeCustomSettings.ShowNodeToolTips = true;
+            this.treeCustomSettings.Size = new System.Drawing.Size(380, 390);
+            this.treeCustomSettings.TabIndex = 14;
+            this.treeCustomSettings.AfterCheck += new System.Windows.Forms.TreeViewEventHandler(this.settingsTree_AfterCheck);
+            // 
+            // treeContextMenu
+            // 
+            this.treeContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.cmiExpandTree,
+            this.cmiCollapseTree,
+            this.cmiCollapseTreeToSelection,
+            this.toolStripSeparator1,
+            this.cmiExpandBranch,
+            this.cmiCollapseBranch,
+            this.toolStripSeparator2,
+            this.cmiCheckBranch,
+            this.cmiUncheckBranch,
+            this.cmiResetBranchToDefault,
+            this.toolStripSeparator3,
+            this.cmiResetSettingToDefault});
+            this.treeContextMenu.Name = "treeContextMenu";
+            this.treeContextMenu.Size = new System.Drawing.Size(209, 220);
+            // 
+            // cmiExpandTree
+            // 
+            this.cmiExpandTree.Name = "cmiExpandTree";
+            this.cmiExpandTree.Size = new System.Drawing.Size(208, 22);
+            this.cmiExpandTree.Text = "Expand Tree";
+            // 
+            // cmiCollapseTree
+            // 
+            this.cmiCollapseTree.Name = "cmiCollapseTree";
+            this.cmiCollapseTree.Size = new System.Drawing.Size(208, 22);
+            this.cmiCollapseTree.Text = "Collapse Tree";
+            // 
+            // cmiCollapseTreeToSelection
+            // 
+            this.cmiCollapseTreeToSelection.Name = "cmiCollapseTreeToSelection";
+            this.cmiCollapseTreeToSelection.Size = new System.Drawing.Size(208, 22);
+            this.cmiCollapseTreeToSelection.Text = "Collapse Tree to Selection";
+            // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
             this.toolStripSeparator1.Size = new System.Drawing.Size(205, 6);
+            // 
+            // cmiExpandBranch
+            // 
+            this.cmiExpandBranch.Name = "cmiExpandBranch";
+            this.cmiExpandBranch.Size = new System.Drawing.Size(208, 22);
+            this.cmiExpandBranch.Text = "Expand Branch";
+            // 
+            // cmiCollapseBranch
+            // 
+            this.cmiCollapseBranch.Name = "cmiCollapseBranch";
+            this.cmiCollapseBranch.Size = new System.Drawing.Size(208, 22);
+            this.cmiCollapseBranch.Text = "Collapse Branch";
             // 
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
             this.toolStripSeparator2.Size = new System.Drawing.Size(205, 6);
             // 
+            // cmiCheckBranch
+            // 
+            this.cmiCheckBranch.Name = "cmiCheckBranch";
+            this.cmiCheckBranch.Size = new System.Drawing.Size(208, 22);
+            this.cmiCheckBranch.Text = "Check Branch";
+            this.cmiCheckBranch.Click += new System.EventHandler(this.cmiCheckBranch_Click);
+            // 
+            // cmiUncheckBranch
+            // 
+            this.cmiUncheckBranch.Name = "cmiUncheckBranch";
+            this.cmiUncheckBranch.Size = new System.Drawing.Size(208, 22);
+            this.cmiUncheckBranch.Text = "Uncheck Branch";
+            this.cmiUncheckBranch.Click += new System.EventHandler(this.cmiUncheckBranch_Click);
+            // 
+            // cmiResetBranchToDefault
+            // 
+            this.cmiResetBranchToDefault.Name = "cmiResetBranchToDefault";
+            this.cmiResetBranchToDefault.Size = new System.Drawing.Size(208, 22);
+            this.cmiResetBranchToDefault.Text = "Reset Branch to Default";
+            // 
             // toolStripSeparator3
             // 
             this.toolStripSeparator3.Name = "toolStripSeparator3";
             this.toolStripSeparator3.Size = new System.Drawing.Size(205, 6);
+            // 
+            // cmiResetSettingToDefault
+            // 
+            this.cmiResetSettingToDefault.Name = "cmiResetSettingToDefault";
+            this.cmiResetSettingToDefault.Size = new System.Drawing.Size(208, 22);
+            this.cmiResetSettingToDefault.Text = "Reset Setting to Default";
             // 
             // treeContextMenu2
             // 
@@ -200,10 +351,34 @@ namespace LiveSplit.AutoSplittingRuntime
             this.treeContextMenu2.Name = "treeContextMenu";
             this.treeContextMenu2.Size = new System.Drawing.Size(209, 98);
             // 
+            // cmiExpandTree2
+            // 
+            this.cmiExpandTree2.Name = "cmiExpandTree2";
+            this.cmiExpandTree2.Size = new System.Drawing.Size(208, 22);
+            this.cmiExpandTree2.Text = "Expand Tree";
+            // 
+            // cmiCollapseTree2
+            // 
+            this.cmiCollapseTree2.Name = "cmiCollapseTree2";
+            this.cmiCollapseTree2.Size = new System.Drawing.Size(208, 22);
+            this.cmiCollapseTree2.Text = "Collapse Tree";
+            // 
+            // cmiCollapseTreeToSelection2
+            // 
+            this.cmiCollapseTreeToSelection2.Name = "cmiCollapseTreeToSelection2";
+            this.cmiCollapseTreeToSelection2.Size = new System.Drawing.Size(208, 22);
+            this.cmiCollapseTreeToSelection2.Text = "Collapse Tree to Selection";
+            // 
             // toolStripSeparator4
             // 
             this.toolStripSeparator4.Name = "toolStripSeparator4";
             this.toolStripSeparator4.Size = new System.Drawing.Size(205, 6);
+            // 
+            // resetSettingToDefaultToolStripMenuItem
+            // 
+            this.resetSettingToDefaultToolStripMenuItem.Name = "resetSettingToDefaultToolStripMenuItem";
+            this.resetSettingToDefaultToolStripMenuItem.Size = new System.Drawing.Size(208, 22);
+            this.resetSettingToDefaultToolStripMenuItem.Text = "Reset Setting to Default";
             // 
             // ComponentSettings
             // 
@@ -213,8 +388,11 @@ namespace LiveSplit.AutoSplittingRuntime
             this.Name = "ComponentSettings";
             this.Padding = new System.Windows.Forms.Padding(7);
             this.Size = new System.Drawing.Size(476, 512);
+            this.Load += new System.EventHandler(this.ComponentSettings_Load);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel1.PerformLayout();
+            this.flowLayoutPanel1.ResumeLayout(false);
+            this.flowLayoutPanel1.PerformLayout();
             this.flowLayoutPanel2.ResumeLayout(false);
             this.treeContextMenu.ResumeLayout(false);
             this.treeContextMenu2.ResumeLayout(false);
@@ -229,11 +407,17 @@ namespace LiveSplit.AutoSplittingRuntime
         private System.Windows.Forms.Label labelScriptPath;
         private System.Windows.Forms.Button btnSelectFile;
         public System.Windows.Forms.TextBox txtScriptPath;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
+        private System.Windows.Forms.Button btnCheckAll;
+        private System.Windows.Forms.Button btnUncheckAll;
+        private System.Windows.Forms.Button btnResetToDefault;
         private System.Windows.Forms.Label labelOptions;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel2;
         private System.Windows.Forms.CheckBox checkboxStart;
         private System.Windows.Forms.CheckBox checkboxReset;
         private System.Windows.Forms.CheckBox checkboxSplit;
+        private System.Windows.Forms.Label labelCustomSettings;
+        private NewTreeView treeCustomSettings;
         private System.Windows.Forms.ContextMenuStrip treeContextMenu;
         private System.Windows.Forms.ToolStripMenuItem cmiCheckBranch;
         private System.Windows.Forms.ToolStripMenuItem cmiUncheckBranch;
