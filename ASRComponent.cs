@@ -69,7 +69,16 @@ namespace LiveSplit.AutoSplittingRuntime
             if (settings.ScriptPath != oldScriptPath)
             {
                 oldScriptPath = settings.ScriptPath;
-                settings.ReloadRuntime();
+                try
+                {
+                    settings.ReloadRuntime();
+                    settings.runtime.Step();
+                }
+                finally
+                {
+                    settings.BuildTree();
+                }
+
             }
 
             settings.runtime?.Step();
