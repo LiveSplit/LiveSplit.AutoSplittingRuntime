@@ -183,6 +183,7 @@ namespace LiveSplit.AutoSplittingRuntime
             settings_node.AppendChild(SettingsHelper.ToElement(document, "Version", "1.0"));
             settings_node.AppendChild(SettingsHelper.ToElement(document, "ScriptPath", ScriptPath));
             AppendBasicSettingsToXml(document, settings_node);
+            AppendCustomSettingsToXml(document, settings_node);
 
             return settings_node;
         }
@@ -242,6 +243,25 @@ namespace LiveSplit.AutoSplittingRuntime
                     settings_node.AppendChild(SettingsHelper.ToElement(document, item.Key, value));
                 }
             }
+        }
+
+        private void AppendCustomSettingsToXml(XmlDocument document, XmlNode parent)
+        {
+            XmlElement asr_parent = document.CreateElement("CustomSettings");
+
+            foreach (var setting in _custom_settings_state)
+            {
+                XmlElement element = SettingsHelper.ToElement(document, "Setting", setting.Value);
+                XmlAttribute id = SettingsHelper.ToAttribute(document, "id", setting.Key);
+                // In case there are other setting types in the future
+                XmlAttribute type = SettingsHelper.ToAttribute(document, "type", "bool");
+
+                element.Attributes.Append(id);
+                element.Attributes.Append(type);
+                asr_parent.AppendChild(element);
+            }
+
+            parent.AppendChild(asr_parent);
         }
 
         private void ParseBasicSettingsFromXml(XmlElement element)
