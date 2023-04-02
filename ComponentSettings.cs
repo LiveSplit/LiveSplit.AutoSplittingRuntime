@@ -145,7 +145,7 @@ namespace LiveSplit.AutoSplittingRuntime
             }
         }   
 
-        private void BuildTree()
+        public void BuildTree()
         {
             this.treeCustomSettings.BeginUpdate();
             this.treeCustomSettings.Nodes.Clear();
