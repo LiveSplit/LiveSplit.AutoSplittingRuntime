@@ -17,6 +17,7 @@ namespace LiveSplit.AutoSplittingRuntime
     {
         private readonly TimerModel model;
         private readonly ComponentSettings settings;
+        private readonly Form parentForm;
         private Timer updateTimer;
 
         private string oldScriptPath;
@@ -34,6 +35,8 @@ namespace LiveSplit.AutoSplittingRuntime
 
         public ASRComponent(LiveSplitState state)
         {
+            parentForm = state.Form;
+
             model = new TimerModel() { CurrentState = state };
 
             settings = new ComponentSettings(model);
@@ -80,29 +83,7 @@ namespace LiveSplit.AutoSplittingRuntime
             this.settings.SetSettings(settings);
         }
 
-        public override void Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode)
-        {
-            // Handle the script reload on the UI thread to properly update the custom settings tree
-
-            // FIXME: Handle potential race conditions?
-            if (settings.ScriptPath != oldScriptPath)
-            {
-                oldScriptPath = settings.ScriptPath;
-
-                // Try to load the new autosplitter
-                // Run it once to let it register it's settings
-                // Whatever happens, we need to rebuild the custom settings tree
-                try
-                {
-                    settings.ReloadRuntime();
-                    settings.runtime.Step();
-                }
-                finally
-                {
-                    settings.BuildTree();
-                }
-            }
-        }
+        public override void Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode) { }
 
         public void UpdateTimerElapsed()
         {
@@ -115,18 +96,50 @@ namespace LiveSplit.AutoSplittingRuntime
 
             try
             {
-                settings.runtime?.Step();
+                if (settings.ScriptPath != oldScriptPath)
+                {
+                    oldScriptPath = settings.ScriptPath;
 
-                // Poll the tick rate and modify the update interval if it has been changed
-                double tickRate = settings.runtime.TickRate().TotalMilliseconds;
+                    InvokeIfNeeded(() => {
+                        // Try to load the new autosplitter
+                        // Run it once to let it register it's settings
+                        // Whatever happens, we need to rebuild the custom settings tree
+                        try
+                        {
+                            settings.ReloadRuntime();
+                            settings.runtime.Step();
+                        }
+                        finally
+                        {
+                            settings.BuildTree();
+                        }
+                    });
+                }
 
-                if (tickRate != updateTimer.Interval)
-                    updateTimer.Interval = tickRate;
+                if (settings.runtime != null)
+                {
+                    settings.runtime.Step();
+
+                    // Poll the tick rate and modify the update interval if it has been changed
+                    double tickRate = settings.runtime.TickRate().TotalMilliseconds;
+
+                    if (tickRate != updateTimer.Interval)
+                        updateTimer.Interval = tickRate;
+                }
+
             }
             finally
             {
                 updateTimer.Enabled = true;
             }
+        }
+
+        private void InvokeIfNeeded(Action x)
+        {
+            if (parentForm != null && parentForm.InvokeRequired)
+                parentForm.Invoke(x);
+            else
+                x();
         }
     }
 }
