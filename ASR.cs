@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using TimeSpan = System.TimeSpan;
 
 namespace LiveSplit.AutoSplittingRuntime
 {
@@ -87,6 +88,15 @@ namespace LiveSplit.AutoSplittingRuntime
                 return false;
             }
             return ASRNative.Runtime_step(this.ptr);
+        }
+
+        public TimeSpan TickRate()
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                return TimeSpan.Zero;
+            }
+            return new TimeSpan((long)ASRNative.Runtime_tick_rate(this.ptr));
         }
 
         public ulong UserSettingsLength() {
@@ -213,6 +223,8 @@ namespace LiveSplit.AutoSplittingRuntime
         public static extern void Runtime_drop(IntPtr self);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
         public static extern bool Runtime_step(IntPtr self);
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern ulong Runtime_tick_rate(IntPtr self);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
         public static extern UIntPtr Runtime_user_settings_len(IntPtr self);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
