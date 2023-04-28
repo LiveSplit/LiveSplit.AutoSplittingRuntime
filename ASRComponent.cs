@@ -61,6 +61,7 @@ namespace LiveSplit.AutoSplittingRuntime
 
         public override void Dispose()
         {
+            updateTimer?.Dispose();
             settings.runtime?.Dispose();
         }
 
