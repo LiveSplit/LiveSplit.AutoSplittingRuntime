@@ -42,7 +42,10 @@ unsafe fn str(s: *const u8) -> &'static str {
 }
 
 #[cfg(target_pointer_width = "64")]
-pub type Runtime = livesplit_auto_splitting::Runtime<CTimer>;
+pub struct Runtime {
+    runtime: livesplit_auto_splitting::Runtime<CTimer>,
+    tick_rate: std::time::Duration,
+}
 
 #[cfg(not(target_pointer_width = "64"))]
 pub type Runtime = ();
@@ -96,7 +99,7 @@ pub unsafe extern "C" fn Runtime_new(
     {
         let path = str(_path_ptr);
         let file = fs::read(path).ok()?;
-        Runtime::new(
+        let runtime = livesplit_auto_splitting::Runtime::new(
             &file,
             CTimer {
                 state: _state,
@@ -110,8 +113,12 @@ pub unsafe extern "C" fn Runtime_new(
             },
             *_settings_store,
         )
-        .ok()
-        .map(Box::new)
+        .ok()?;
+
+        Some(Box::new(Runtime {
+            runtime,
+            tick_rate: std::time::Duration::new(1, 0) / 120,
+        }))
     }
     #[cfg(not(target_pointer_width = "64"))]
     Some(Box::new(()))
@@ -124,17 +131,38 @@ pub extern "C" fn Runtime_drop(_: Box<Runtime>) {}
 pub extern "C" fn Runtime_step(_this: &mut Runtime) -> bool {
     #[cfg(target_pointer_width = "64")]
     {
-        _this.update().is_ok()
+        if let Ok(tick_rate) = _this.runtime.update() {
+            _this.tick_rate = tick_rate;
+            true
+        } else {
+            false
+        }
     }
     #[cfg(not(target_pointer_width = "64"))]
     true
 }
 
 #[no_mangle]
+pub extern "C" fn Runtime_tick_rate(_this: &Runtime) -> u64 {
+    const TICKS_PER_SEC: u64 = 10_000_000;
+    const NANOS_PER_SEC: u64 = 1_000_000_000;
+    const NANOS_PER_TICK: u64 = NANOS_PER_SEC / TICKS_PER_SEC;
+
+    #[cfg(target_pointer_width = "64")]
+    let tick_rate = _this.tick_rate;
+    #[cfg(not(target_pointer_width = "64"))]
+    let tick_rate = std::time::Duration::new(1, 0) / 120;
+
+    let (secs, nanos) = (tick_rate.as_secs(), tick_rate.subsec_nanos());
+
+    secs * TICKS_PER_SEC + nanos as u64 / NANOS_PER_TICK
+}
+
+#[no_mangle]
 pub extern "C" fn Runtime_user_settings_len(_this: &Runtime) -> usize {
     #[cfg(target_pointer_width = "64")]
     {
-        _this.user_settings().len()
+        _this.runtime.user_settings().len()
     }
     #[cfg(not(target_pointer_width = "64"))]
     0
@@ -144,7 +172,7 @@ pub extern "C" fn Runtime_user_settings_len(_this: &Runtime) -> usize {
 pub extern "C" fn Runtime_user_settings_get_key(_this: &Runtime, _index: usize) -> *const u8 {
     #[cfg(target_pointer_width = "64")]
     {
-        output_str(&_this.user_settings()[_index].key)
+        output_str(&_this.runtime.user_settings()[_index].key)
     }
     #[cfg(not(target_pointer_width = "64"))]
     panic!("Index out of bounds")
@@ -157,7 +185,7 @@ pub extern "C" fn Runtime_user_settings_get_description(
 ) -> *const u8 {
     #[cfg(target_pointer_width = "64")]
     {
-        output_str(&_this.user_settings()[_index].description)
+        output_str(&_this.runtime.user_settings()[_index].description)
     }
     #[cfg(not(target_pointer_width = "64"))]
     panic!("Index out of bounds")
@@ -167,7 +195,7 @@ pub extern "C" fn Runtime_user_settings_get_description(
 pub extern "C" fn Runtime_user_settings_get_type(_this: &Runtime, _index: usize) -> usize {
     #[cfg(target_pointer_width = "64")]
     {
-        match _this.user_settings()[_index].default_value {
+        match _this.runtime.user_settings()[_index].default_value {
             SettingValue::Bool(_) => 1,
             _ => 0,
         }
@@ -180,9 +208,9 @@ pub extern "C" fn Runtime_user_settings_get_type(_this: &Runtime, _index: usize)
 pub extern "C" fn Runtime_user_settings_get_bool(_this: &Runtime, _index: usize) -> bool {
     #[cfg(target_pointer_width = "64")]
     {
-        let setting = &_this.user_settings()[_index];
+        let setting = &_this.runtime.user_settings()[_index];
         let SettingValue::Bool(default) = setting.default_value else { return false };
-        match _this.settings_store().get(&setting.key) {
+        match _this.runtime.settings_store().get(&setting.key) {
             Some(SettingValue::Bool(stored)) => *stored,
             _ => default,
         }
