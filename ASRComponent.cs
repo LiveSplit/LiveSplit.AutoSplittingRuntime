@@ -80,7 +80,29 @@ namespace LiveSplit.AutoSplittingRuntime
             this.settings.SetSettings(settings);
         }
 
-        public override void Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode) { }
+        public override void Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode)
+        {
+            // Handle the script reload on the UI thread to properly update the custom settings tree
+
+            // FIXME: Handle potential race conditions?
+            if (settings.ScriptPath != oldScriptPath)
+            {
+                oldScriptPath = settings.ScriptPath;
+
+                // Try to load the new autosplitter
+                // Run it once to let it register it's settings
+                // Whatever happens, we need to rebuild the custom settings tree
+                try
+                {
+                    settings.ReloadRuntime();
+                    settings.runtime.Step();
+                }
+                finally
+                {
+                    settings.BuildTree();
+                }
+            }
+        }
 
         public void UpdateTimerElapsed()
         {
@@ -91,30 +113,20 @@ namespace LiveSplit.AutoSplittingRuntime
             // showing a message window are used.
             updateTimer.Enabled = false;
 
-            if (settings.ScriptPath != oldScriptPath)
+            try
             {
-                oldScriptPath = settings.ScriptPath;
-                try
-                {
-                    settings.ReloadRuntime();
-                    settings.runtime.Step();
-                }
-                finally
-                {
-                    settings.BuildTree();
-                }
+                settings.runtime?.Step();
 
+                // Poll the tick rate and modify the update interval if it has been changed
+                double tickRate = settings.runtime.TickRate().TotalMilliseconds;
+
+                if (tickRate != updateTimer.Interval)
+                    updateTimer.Interval = tickRate;
             }
-
-            settings.runtime?.Step();
-
-            // Poll the tick rate and modify the update interval if it has been changed
-            double tickRate = settings.runtime.TickRate().TotalMilliseconds;
-
-            if (tickRate != updateTimer.Interval)
-                updateTimer.Interval = tickRate;
-
-            updateTimer.Enabled = true;
+            finally
+            {
+                updateTimer.Enabled = true;
+            }
         }
     }
 }
