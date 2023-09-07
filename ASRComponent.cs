@@ -56,15 +56,17 @@ namespace LiveSplit.AutoSplittingRuntime
         private void InitializeUpdateTimer()
         {
             updateTimer = new Timer() { Interval = 15 };
-            updateTimer.Elapsed += (sender, args) => UpdateTimerElapsed();
-            updateTimer.Enabled = true;
+            updateTimer.Elapsed += UpdateTimerElapsed;
+            updateTimer.Start();
         }
 
         public override string ComponentName => "Auto Splitting Runtime";
 
         public override void Dispose()
         {
-            updateTimer?.Dispose();
+            updateTimer.Elapsed -= UpdateTimerElapsed;
+            updateTimer.Dispose();
+            updateTimer = null;
             settings.runtime?.Dispose();
         }
 
@@ -85,52 +87,52 @@ namespace LiveSplit.AutoSplittingRuntime
 
         public override void Update(IInvalidator invalidator, LiveSplitState state, float width, float height, LayoutMode mode) { }
 
-        public void UpdateTimerElapsed()
+        public void UpdateTimerElapsed(object sender, EventArgs e)
         {
             // This refresh timer behavior is similar to the ASL refresh timer
 
             // Disable timer, to wait for execution of this iteration to
             // finish. This can be useful if blocking operations like
             // showing a message window are used.
-            updateTimer.Enabled = false;
+            updateTimer?.Stop();
 
             try
             {
-                if (settings.ScriptPath != oldScriptPath)
+                InvokeIfNeeded(() =>
                 {
-                    oldScriptPath = settings.ScriptPath;
+                    if (settings.ScriptPath != oldScriptPath)
+                    {
+                        oldScriptPath = settings.ScriptPath;
 
-                    InvokeIfNeeded(() => {
                         // Try to load the new autosplitter
                         // Run it once to let it register it's settings
                         // Whatever happens, we need to rebuild the custom settings tree
                         try
                         {
                             settings.ReloadRuntime();
-                            settings.runtime.Step();
+                            settings.runtime?.Step();
                         }
                         finally
                         {
                             settings.BuildTree();
                         }
-                    });
-                }
+                    }
 
-                if (settings.runtime != null)
-                {
-                    settings.runtime.Step();
+                    if (settings.runtime != null)
+                    {
+                        settings.runtime.Step();
 
-                    // Poll the tick rate and modify the update interval if it has been changed
-                    double tickRate = settings.runtime.TickRate().TotalMilliseconds;
+                        // Poll the tick rate and modify the update interval if it has been changed
+                        double tickRate = settings.runtime.TickRate().TotalMilliseconds;
 
-                    if (tickRate != updateTimer.Interval)
-                        updateTimer.Interval = tickRate;
-                }
-
+                        if (updateTimer != null && tickRate != updateTimer.Interval)
+                            updateTimer.Interval = tickRate;
+                    }
+                });
             }
             finally
             {
-                updateTimer.Enabled = true;
+                updateTimer?.Start();
             }
         }
 
