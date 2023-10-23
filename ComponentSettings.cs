@@ -55,6 +55,8 @@ namespace LiveSplit.AutoSplittingRuntime
         private readonly StateDelegate getState;
         private readonly Action start;
         private readonly Action split;
+        private readonly Action skipSplit;
+        private readonly Action undoSplit;
         private readonly Action reset;
         private readonly SetGameTimeDelegate setGameTime;
         private readonly Action pauseGameTime;
@@ -93,6 +95,8 @@ namespace LiveSplit.AutoSplittingRuntime
             };
             start = () => model.Start();
             split = () => model.Split();
+            skipSplit = () => model.SkipSplit();
+            undoSplit = () => model.UndoSplit();
             reset = () => model.Reset();
             setGameTime = (ticks) => model.CurrentState.SetGameTime(new TimeSpan(ticks));
             pauseGameTime = () => model.CurrentState.IsGameTimePaused = true;
@@ -131,6 +135,8 @@ namespace LiveSplit.AutoSplittingRuntime
                         getState,
                         start,
                         split,
+                        skipSplit,
+                        undoSplit,
                         reset,
                         setGameTime,
                         pauseGameTime,
@@ -143,7 +149,7 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 Log.Error(ex);
             }
-        }   
+        }
 
         public void BuildTree()
         {
@@ -153,23 +159,50 @@ namespace LiveSplit.AutoSplittingRuntime
             if (runtime != null)
             {
 
+                var parent = this.treeCustomSettings.Nodes;
+                TreeNode parentNode = null;
+
                 var len = runtime.UserSettingsLength();
                 for (ulong i = 0; i < len; i++)
                 {
-                    var key = runtime.UserSettingGetKey(i);
                     var desc = runtime.UserSettingGetDescription(i);
+                    var tooltip = runtime.UserSettingGetTooltip(i);
                     var ty = runtime.UserSettingGetType(i);
-
-                    if (ty != "bool") continue;
-
-                    var value = runtime.UserSettingGetBool(i);
 
                     var node = new TreeNode(desc)
                     {
-                        Tag = key,
-                        Checked = value,
+                        ToolTipText = tooltip,
                     };
-                    this.treeCustomSettings.Nodes.Add(node);
+
+                    switch (ty)
+                    {
+                        case "bool":
+                            {
+                                node.Tag = runtime.UserSettingGetKey(i);
+                                node.Checked = runtime.UserSettingGetBool(i);
+                                break;
+                            }
+                        case "title":
+                            {
+                                var headingLevel = runtime.UserSettingGetHeadingLevel(i);
+                                node.Tag = headingLevel;
+                                while (parentNode != null && (uint)parentNode.Tag >= headingLevel)
+                                {
+                                    parent = parentNode.Parent.Nodes;
+                                    parentNode = parentNode.Parent;
+                                }
+                                break;
+                            }
+                        default: continue;
+                    }
+
+                    parent.Add(node);
+
+                    if (ty == "title")
+                    {
+                        parent = node.Nodes;
+                        parentNode = node;
+                    }
                 }
             }
 
@@ -284,7 +317,7 @@ namespace LiveSplit.AutoSplittingRuntime
         /// <summary>
         /// Parses custom settings, stores them and updates the checked state of already added tree nodes.
         /// </summary>
-        /// 
+        ///
         private void ParseCustomSettingsFromXml(XmlElement data)
         {
             XmlElement custom_settings_node = data["CustomSettings"];
@@ -346,7 +379,7 @@ namespace LiveSplit.AutoSplittingRuntime
         /// Generic update on all given nodes and their childnodes, ignoring childnodes for
         /// nodes where the Func returns false.
         /// </summary>
-        /// 
+        ///
         private void UpdateNodesInTree(Func<TreeNode, bool> func, TreeNodeCollection nodes)
         {
             foreach (TreeNode node in nodes)
@@ -362,7 +395,7 @@ namespace LiveSplit.AutoSplittingRuntime
         ///// value of the given Func.
         ///// </summary>
         ///// <param name="nodes">If nodes is null, all nodes of the custom settings tree are affected.</param>
-        ///// 
+        /////
         //private void UpdateNodesCheckedState(Func<ASRSetting, bool> func, TreeNodeCollection nodes = null)
         //{
         //    if (nodes == null)
@@ -383,7 +416,7 @@ namespace LiveSplit.AutoSplittingRuntime
         ///// Update the checked state of all given nodes and their childnodes
         ///// based on a dictionary of setting values.
         ///// </summary>
-        ///// 
+        /////
         //private void UpdateNodesCheckedState(Dictionary<string, bool> setting_values, TreeNodeCollection nodes = null)
         //{
         //    if (setting_values == null)
@@ -401,6 +434,8 @@ namespace LiveSplit.AutoSplittingRuntime
 
         private void UpdateNodeCheckedState(bool value, TreeNode node)
         {
+            if (!(node.Tag is string)) return;
+
             var key = (string)node.Tag;
 
             if (node.Checked != value)
@@ -453,7 +488,9 @@ namespace LiveSplit.AutoSplittingRuntime
         // Custom Setting checked/unchecked (only after initially building the tree)
         private void settingsTree_AfterCheck(object sender, TreeViewEventArgs e)
         {
-            _custom_settings_state[(string)e.Node.Tag] = e.Node.Checked;
+            if (!(e.Node.Tag is string)) return;
+            var tag = (string)e.Node.Tag;
+            _custom_settings_state[tag] = e.Node.Checked;
             ReloadRuntime();
         }
 
@@ -474,7 +511,7 @@ namespace LiveSplit.UI.Components
     /// <summary>
     /// TreeView with fixed double-clicking on checkboxes.
     /// </summary>
-    /// 
+    ///
     /// See also:
     /// http://stackoverflow.com/questions/17356976/treeview-with-checkboxes-not-processing-clicks-correctly
     /// http://stackoverflow.com/questions/14647216/c-sharp-treeview-ignore-double-click-only-at-checkbox

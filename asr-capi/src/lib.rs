@@ -1,6 +1,8 @@
 #[cfg(target_pointer_width = "64")]
 use {
-    livesplit_auto_splitting::{time, SettingValue, SettingsStore, Timer, TimerState},
+    livesplit_auto_splitting::{
+        time, Config, SettingValue, SettingsStore, Timer, TimerState, UserSettingKind,
+    },
     std::{cell::RefCell, ffi::CStr, fmt, fs},
 };
 
@@ -36,7 +38,6 @@ unsafe fn str(s: *const u8) -> &'static str {
         ""
     } else {
         let bytes = CStr::from_ptr(s.cast()).to_bytes();
-        // TODO: Can we actually trust C#?
         std::str::from_utf8_unchecked(bytes)
     }
 }
@@ -44,7 +45,6 @@ unsafe fn str(s: *const u8) -> &'static str {
 #[cfg(target_pointer_width = "64")]
 pub struct Runtime {
     runtime: livesplit_auto_splitting::Runtime<CTimer>,
-    tick_rate: std::time::Duration,
 }
 
 #[cfg(not(target_pointer_width = "64"))]
@@ -89,6 +89,8 @@ pub unsafe extern "C" fn Runtime_new(
     _state: unsafe extern "C" fn() -> i32,
     _start: unsafe extern "C" fn(),
     _split: unsafe extern "C" fn(),
+    _skip_split: unsafe extern "C" fn(),
+    _undo_split: unsafe extern "C" fn(),
     _reset: unsafe extern "C" fn(),
     _set_game_time: unsafe extern "C" fn(i64),
     _pause_game_time: unsafe extern "C" fn(),
@@ -99,26 +101,29 @@ pub unsafe extern "C" fn Runtime_new(
     {
         let path = str(_path_ptr);
         let file = fs::read(path).ok()?;
+
+        let mut config = Config::default();
+        config.settings_store = Some(*_settings_store);
+
         let runtime = livesplit_auto_splitting::Runtime::new(
             &file,
             CTimer {
                 state: _state,
                 start: _start,
                 split: _split,
+                skip_split: _skip_split,
+                undo_split: _undo_split,
                 reset: _reset,
                 set_game_time: _set_game_time,
                 pause_game_time: _pause_game_time,
                 resume_game_time: _resume_game_time,
                 log: _log,
             },
-            *_settings_store,
+            config,
         )
         .ok()?;
 
-        Some(Box::new(Runtime {
-            runtime,
-            tick_rate: std::time::Duration::new(1, 0) / 120,
-        }))
+        Some(Box::new(Runtime { runtime }))
     }
     #[cfg(not(target_pointer_width = "64"))]
     Some(Box::new(()))
@@ -128,15 +133,10 @@ pub unsafe extern "C" fn Runtime_new(
 pub extern "C" fn Runtime_drop(_: Box<Runtime>) {}
 
 #[no_mangle]
-pub extern "C" fn Runtime_step(_this: &mut Runtime) -> bool {
+pub extern "C" fn Runtime_step(_this: &Runtime) -> bool {
     #[cfg(target_pointer_width = "64")]
     {
-        if let Ok(tick_rate) = _this.runtime.update() {
-            _this.tick_rate = tick_rate;
-            true
-        } else {
-            false
-        }
+        _this.runtime.lock().update().is_ok()
     }
     #[cfg(not(target_pointer_width = "64"))]
     true
@@ -149,7 +149,7 @@ pub extern "C" fn Runtime_tick_rate(_this: &Runtime) -> u64 {
     const NANOS_PER_TICK: u64 = NANOS_PER_SEC / TICKS_PER_SEC;
 
     #[cfg(target_pointer_width = "64")]
-    let tick_rate = _this.tick_rate;
+    let tick_rate = _this.runtime.tick_rate();
     #[cfg(not(target_pointer_width = "64"))]
     let tick_rate = std::time::Duration::new(1, 0) / 120;
 
@@ -192,12 +192,27 @@ pub extern "C" fn Runtime_user_settings_get_description(
 }
 
 #[no_mangle]
+pub extern "C" fn Runtime_user_settings_get_tooltip(_this: &Runtime, _index: usize) -> *const u8 {
+    #[cfg(target_pointer_width = "64")]
+    {
+        output_str(
+            _this.runtime.user_settings()[_index]
+                .tooltip
+                .as_deref()
+                .unwrap_or_default(),
+        )
+    }
+    #[cfg(not(target_pointer_width = "64"))]
+    panic!("Index out of bounds")
+}
+
+#[no_mangle]
 pub extern "C" fn Runtime_user_settings_get_type(_this: &Runtime, _index: usize) -> usize {
     #[cfg(target_pointer_width = "64")]
     {
-        match _this.runtime.user_settings()[_index].default_value {
-            SettingValue::Bool(_) => 1,
-            _ => 0,
+        match _this.runtime.user_settings()[_index].kind {
+            UserSettingKind::Bool { .. } => 1,
+            UserSettingKind::Title { .. } => 2,
         }
     }
     #[cfg(not(target_pointer_width = "64"))]
@@ -209,11 +224,27 @@ pub extern "C" fn Runtime_user_settings_get_bool(_this: &Runtime, _index: usize)
     #[cfg(target_pointer_width = "64")]
     {
         let setting = &_this.runtime.user_settings()[_index];
-        let SettingValue::Bool(default) = setting.default_value else { return false };
+        let UserSettingKind::Bool { default_value } = setting.kind else {
+            return false;
+        };
         match _this.runtime.settings_store().get(&setting.key) {
             Some(SettingValue::Bool(stored)) => *stored,
-            _ => default,
+            _ => default_value,
         }
+    }
+    #[cfg(not(target_pointer_width = "64"))]
+    panic!("Index out of bounds")
+}
+
+#[no_mangle]
+pub extern "C" fn Runtime_user_settings_get_heading_level(_this: &Runtime, _index: usize) -> u32 {
+    #[cfg(target_pointer_width = "64")]
+    {
+        let setting = &_this.runtime.user_settings()[_index];
+        let UserSettingKind::Title { heading_level } = setting.kind else {
+            return 0;
+        };
+        heading_level
     }
     #[cfg(not(target_pointer_width = "64"))]
     panic!("Index out of bounds")
@@ -224,6 +255,8 @@ pub struct CTimer {
     state: unsafe extern "C" fn() -> i32,
     start: unsafe extern "C" fn(),
     split: unsafe extern "C" fn(),
+    skip_split: unsafe extern "C" fn(),
+    undo_split: unsafe extern "C" fn(),
     reset: unsafe extern "C" fn(),
     set_game_time: unsafe extern "C" fn(i64),
     pause_game_time: unsafe extern "C" fn(),
@@ -248,6 +281,14 @@ impl Timer for CTimer {
 
     fn split(&mut self) {
         unsafe { (self.split)() }
+    }
+
+    fn skip_split(&mut self) {
+        unsafe { (self.skip_split)() }
+    }
+
+    fn undo_split(&mut self) {
+        unsafe { (self.undo_split)() }
     }
 
     fn reset(&mut self) {

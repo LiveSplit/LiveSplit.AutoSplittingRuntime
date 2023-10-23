@@ -49,6 +49,8 @@ namespace LiveSplit.AutoSplittingRuntime
             StateDelegate state,
             Action start,
             Action split,
+            Action skipSplit,
+            Action undoSplit,
             Action reset,
             SetGameTimeDelegate setGameTime,
             Action pauseGameTime,
@@ -68,6 +70,8 @@ namespace LiveSplit.AutoSplittingRuntime
                 state,
                 start,
                 split,
+                skipSplit,
+                undoSplit,
                 reset,
                 setGameTime,
                 pauseGameTime,
@@ -99,7 +103,8 @@ namespace LiveSplit.AutoSplittingRuntime
             return new TimeSpan((long)ASRNative.Runtime_tick_rate(this.ptr));
         }
 
-        public ulong UserSettingsLength() {
+        public ulong UserSettingsLength()
+        {
             if (ptr == IntPtr.Zero)
             {
                 return 0;
@@ -107,7 +112,8 @@ namespace LiveSplit.AutoSplittingRuntime
             return (ulong)ASRNative.Runtime_user_settings_len(this.ptr);
         }
 
-        public string UserSettingGetKey(ulong index) {
+        public string UserSettingGetKey(ulong index)
+        {
             if (ptr == IntPtr.Zero)
             {
                 return "";
@@ -124,6 +130,24 @@ namespace LiveSplit.AutoSplittingRuntime
             return ASRNative.Runtime_user_settings_get_description(this.ptr, (UIntPtr)index);
         }
 
+        public string UserSettingGetTooltip(ulong index)
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                return "";
+            }
+            return ASRNative.Runtime_user_settings_get_tooltip(this.ptr, (UIntPtr)index);
+        }
+
+        public uint UserSettingGetHeadingLevel(ulong index)
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                return 0;
+            }
+            return ASRNative.Runtime_user_settings_get_heading_level(this.ptr, (UIntPtr)index);
+        }
+
         public string UserSettingGetType(ulong index)
         {
             if (ptr == IntPtr.Zero)
@@ -134,6 +158,7 @@ namespace LiveSplit.AutoSplittingRuntime
             switch ((ulong)ty)
             {
                 case 1: return "bool";
+                case 2: return "title";
                 default: return "";
             }
         }
@@ -213,6 +238,8 @@ namespace LiveSplit.AutoSplittingRuntime
             StateDelegate state,
             Action start,
             Action split,
+            Action skipSplit,
+            Action undoSplit,
             Action reset,
             SetGameTimeDelegate set_game_time,
             Action pause_game_time,
@@ -231,6 +258,10 @@ namespace LiveSplit.AutoSplittingRuntime
         public static extern ASRString Runtime_user_settings_get_key(IntPtr self, UIntPtr index);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
         public static extern ASRString Runtime_user_settings_get_description(IntPtr self, UIntPtr index);
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern ASRString Runtime_user_settings_get_tooltip(IntPtr self, UIntPtr index);
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern uint Runtime_user_settings_get_heading_level(IntPtr self, UIntPtr index);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
         public static extern UIntPtr Runtime_user_settings_get_type(IntPtr self, UIntPtr index);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]

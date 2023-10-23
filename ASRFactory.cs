@@ -11,12 +11,12 @@ using System.Threading.Tasks;
 
 namespace LiveSplit.AutoSplittingRuntime
 {
-    public class ASRFactory: IComponentFactory
+    public class ASRFactory : IComponentFactory
     {
         public string ComponentName => "Auto Splitting Runtime";
         public string Description => "Allows auto splitters provided as WebAssembly modules to define the splitting behaviour.";
         public ComponentCategory Category => ComponentCategory.Control;
-        public Version Version => Version.Parse("0.0.4");
+        public Version Version => Version.Parse("0.0.5");
 
         public string UpdateName => ComponentName;
         public string UpdateURL => "http://livesplit.org/update/";
