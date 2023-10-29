@@ -1,9 +1,9 @@
 #[cfg(target_pointer_width = "64")]
 use {
     livesplit_auto_splitting::{
-        time, Config, SettingValue, SettingsStore, Timer, TimerState, UserSettingKind,
+        time, Config, SettingValue, SettingsMap, Timer, TimerState, UserSettingKind,
     },
-    std::{cell::RefCell, ffi::CStr, fmt, fs},
+    std::{cell::RefCell, ffi::CStr, fmt, fs, sync::Arc},
 };
 
 #[cfg(target_pointer_width = "64")]
@@ -51,33 +51,106 @@ pub struct Runtime {
 pub type Runtime = ();
 
 #[cfg(not(target_pointer_width = "64"))]
-pub type SettingsStore = ();
+pub type SettingsMap = ();
 
 #[no_mangle]
-pub extern "C" fn SettingsStore_new() -> Box<SettingsStore> {
+pub extern "C" fn SettingsMap_new() -> Box<SettingsMap> {
     #[cfg(target_pointer_width = "64")]
     {
-        Box::new(SettingsStore::new())
+        Box::new(SettingsMap::new())
     }
     #[cfg(not(target_pointer_width = "64"))]
     Box::new(())
 }
 
 #[no_mangle]
-pub extern "C" fn SettingsStore_drop(_: Box<SettingsStore>) {}
+pub extern "C" fn SettingsMap_drop(_: Box<SettingsMap>) {}
 
 /// # Safety
 /// TODO:
 #[no_mangle]
-pub unsafe extern "C" fn SettingsStore_set_bool(
-    _this: &mut SettingsStore,
+pub unsafe extern "C" fn SettingsMap_set_bool(
+    _this: &mut SettingsMap,
     _key_ptr: *const u8,
     _value: bool,
 ) {
     #[cfg(target_pointer_width = "64")]
     {
-        _this.set(str(_key_ptr as _).into(), SettingValue::Bool(_value));
+        _this.insert(str(_key_ptr as _).into(), SettingValue::Bool(_value));
     }
+}
+
+#[no_mangle]
+pub extern "C" fn SettingsMap_iter<'a>(
+    _this: &'a SettingsMap,
+    _key_ptr: *const u8,
+) -> Box<SettingsMapIter<'_>> {
+    #[cfg(target_pointer_width = "64")]
+    {
+        Box::new(SettingsMapIter {
+            iter: (Box::new(_this.iter())
+                as Box<dyn Iterator<Item = (&'a str, &'a SettingValue)> + 'a>)
+                .peekable(),
+        })
+    }
+    #[cfg(not(target_pointer_width = "64"))]
+    Box::new(SettingsMapIter {
+        _phantom: std::marker::PhantomData,
+    })
+}
+
+#[cfg(target_pointer_width = "64")]
+pub struct SettingsMapIter<'a> {
+    iter: std::iter::Peekable<Box<dyn Iterator<Item = (&'a str, &'a SettingValue)> + 'a>>,
+}
+
+#[cfg(not(target_pointer_width = "64"))]
+pub struct SettingsMapIter<'a> {
+    _phantom: std::marker::PhantomData<&'a ()>,
+}
+
+#[no_mangle]
+pub extern "C" fn SettingsMapIter_drop(_: Box<SettingsMapIter<'_>>) {}
+
+#[no_mangle]
+pub extern "C" fn SettingsMapIter_has_current(_this: &mut SettingsMapIter<'_>) -> bool {
+    #[cfg(target_pointer_width = "64")]
+    {
+        _this.iter.peek().is_some()
+    }
+    #[cfg(not(target_pointer_width = "64"))]
+    false
+}
+
+#[no_mangle]
+pub extern "C" fn SettingsMapIter_next(_this: &mut SettingsMapIter<'_>) {
+    #[cfg(target_pointer_width = "64")]
+    {
+        _this.iter.next();
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn SettingsMapIter_get_key(_this: &mut SettingsMapIter<'_>) -> *const u8 {
+    #[cfg(target_pointer_width = "64")]
+    {
+        output_str(_this.iter.peek().unwrap().0)
+    }
+    #[cfg(not(target_pointer_width = "64"))]
+    panic!("Index out of bounds")
+}
+
+#[no_mangle]
+pub extern "C" fn SettingsMapIter_get_bool_value(_this: &mut SettingsMapIter<'_>) -> bool {
+    #[cfg(target_pointer_width = "64")]
+    {
+        match _this.iter.peek().unwrap().1 {
+            SettingValue::Bool(v) => *v,
+            _ => false,
+        }
+    }
+    #[cfg(not(target_pointer_width = "64"))]
+    panic!("Index out of bounds")
 }
 
 /// # Safety
@@ -85,7 +158,7 @@ pub unsafe extern "C" fn SettingsStore_set_bool(
 #[no_mangle]
 pub unsafe extern "C" fn Runtime_new(
     _path_ptr: *const u8,
-    _settings_store: Box<SettingsStore>,
+    _settings_map: Box<SettingsMap>,
     _state: unsafe extern "C" fn() -> i32,
     _start: unsafe extern "C" fn(),
     _split: unsafe extern "C" fn(),
@@ -103,7 +176,7 @@ pub unsafe extern "C" fn Runtime_new(
         let file = fs::read(path).ok()?;
 
         let mut config = Config::default();
-        config.settings_store = Some(*_settings_store);
+        config.settings_map = Some(*_settings_map);
 
         let runtime = livesplit_auto_splitting::Runtime::new(
             &file,
@@ -227,7 +300,7 @@ pub extern "C" fn Runtime_user_settings_get_bool(_this: &Runtime, _index: usize)
         let UserSettingKind::Bool { default_value } = setting.kind else {
             return false;
         };
-        match _this.runtime.settings_store().get(&setting.key) {
+        match _this.runtime.settings_map().get(&setting.key) {
             Some(SettingValue::Bool(stored)) => *stored,
             _ => default_value,
         }
@@ -248,6 +321,40 @@ pub extern "C" fn Runtime_user_settings_get_heading_level(_this: &Runtime, _inde
     }
     #[cfg(not(target_pointer_width = "64"))]
     panic!("Index out of bounds")
+}
+
+/// # Safety
+/// TODO:
+#[no_mangle]
+pub unsafe extern "C" fn Runtime_settings_map_set_bool(
+    _this: &Runtime,
+    _key: *const u8,
+    _value: bool,
+) {
+    #[cfg(target_pointer_width = "64")]
+    {
+        let key = Arc::<str>::from(str(_key));
+        loop {
+            let mut map = _this.runtime.settings_map();
+            let old = map.clone();
+            map.insert(key.clone(), SettingValue::Bool(_value));
+            if _this.runtime.set_settings_map_if_unchanged(&old, map) {
+                break;
+            }
+        }
+    }
+    #[cfg(not(target_pointer_width = "64"))]
+    panic!("Index out of bounds")
+}
+
+#[no_mangle]
+pub extern "C" fn Runtime_get_settings_map(_this: &Runtime) -> Box<SettingsMap> {
+    #[cfg(target_pointer_width = "64")]
+    {
+        Box::new(_this.runtime.settings_map())
+    }
+    #[cfg(not(target_pointer_width = "64"))]
+    Box::new(())
 }
 
 #[cfg(target_pointer_width = "64")]

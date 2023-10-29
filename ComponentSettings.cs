@@ -122,16 +122,16 @@ namespace LiveSplit.AutoSplittingRuntime
 
                 if (!string.IsNullOrEmpty(ScriptPath))
                 {
-                    var settingsStore = new SettingsStore();
+                    var settingsMap = new SettingsMap();
 
                     foreach (var pair in _custom_settings_state)
                     {
-                        settingsStore.Set(pair.Key, pair.Value);
+                        settingsMap.Set(pair.Key, pair.Value);
                     }
 
                     runtime = new Runtime(
                         ScriptPath,
-                        settingsStore,
+                        settingsMap,
                         getState,
                         start,
                         split,
@@ -282,16 +282,23 @@ namespace LiveSplit.AutoSplittingRuntime
         {
             XmlElement asr_parent = document.CreateElement("CustomSettings");
 
-            foreach (var setting in _custom_settings_state)
+            if (runtime != null)
             {
-                XmlElement element = SettingsHelper.ToElement(document, "Setting", setting.Value);
-                XmlAttribute id = SettingsHelper.ToAttribute(document, "id", setting.Key);
-                // In case there are other setting types in the future
-                XmlAttribute type = SettingsHelper.ToAttribute(document, "type", "bool");
+                var settingsMap = runtime.GetSettingsMap();
+                var iter = settingsMap.Iter();
+                while (iter.HasCurrent())
+                {
+                    XmlElement element = SettingsHelper.ToElement(document, "Setting", iter.GetBoolValue());
+                    XmlAttribute id = SettingsHelper.ToAttribute(document, "id", iter.GetKey());
+                    // In case there are other setting types in the future
+                    XmlAttribute type = SettingsHelper.ToAttribute(document, "type", "bool");
 
-                element.Attributes.Append(id);
-                element.Attributes.Append(type);
-                asr_parent.AppendChild(element);
+                    element.Attributes.Append(id);
+                    element.Attributes.Append(type);
+                    asr_parent.AppendChild(element);
+
+                    iter.Next();
+                }
             }
 
             parent.AppendChild(asr_parent);
@@ -441,7 +448,7 @@ namespace LiveSplit.AutoSplittingRuntime
             if (node.Checked != value)
             {
                 _custom_settings_state[key] = value;
-                ReloadRuntime();
+                runtime?.SettingsMapSetBool(key, value);
             }
         }
 
@@ -491,7 +498,7 @@ namespace LiveSplit.AutoSplittingRuntime
             if (!(e.Node.Tag is string)) return;
             var tag = (string)e.Node.Tag;
             _custom_settings_state[tag] = e.Node.Checked;
-            ReloadRuntime();
+            runtime?.SettingsMapSetBool(tag, e.Node.Checked);
         }
 
         private void cmiCheckBranch_Click(object sender, EventArgs e)

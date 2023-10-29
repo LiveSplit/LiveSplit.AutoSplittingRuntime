@@ -45,7 +45,7 @@ namespace LiveSplit.AutoSplittingRuntime
         }
         public Runtime(
             string path,
-            SettingsStore settingsStore,
+            SettingsMap settingsMap,
             StateDelegate state,
             Action start,
             Action split,
@@ -58,15 +58,15 @@ namespace LiveSplit.AutoSplittingRuntime
             LogDelegate log
         ) : base(IntPtr.Zero)
         {
-            IntPtr settingsStorePtr = settingsStore.ptr;
-            if (settingsStorePtr == IntPtr.Zero)
+            IntPtr settingsMapPtr = settingsMap.ptr;
+            if (settingsMapPtr == IntPtr.Zero)
             {
                 throw new ArgumentException("The Settings Store is disposed.");
             }
-            settingsStore.ptr = IntPtr.Zero;
+            settingsMap.ptr = IntPtr.Zero;
             this.ptr = ASRNative.Runtime_new(
                 path,
-                settingsStorePtr,
+                settingsMapPtr,
                 state,
                 start,
                 split,
@@ -171,33 +171,67 @@ namespace LiveSplit.AutoSplittingRuntime
             }
             return ASRNative.Runtime_user_settings_get_bool(this.ptr, (UIntPtr)index) != 0;
         }
-    }
 
-    public class SettingsStoreRef
-    {
-        internal IntPtr ptr;
-        internal SettingsStoreRef(IntPtr ptr)
+        public void SettingsMapSetBool(string key, bool value)
         {
-            this.ptr = ptr;
+            if (ptr == IntPtr.Zero)
+            {
+                return;
+            }
+            ASRNative.Runtime_settings_map_set_bool(this.ptr, key, value ? (byte)1 : (byte)0);
+        }
+
+        public SettingsMap GetSettingsMap()
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                return null;
+            }
+            return new SettingsMap(ASRNative.Runtime_get_settings_map(this.ptr));
         }
     }
 
-    public class SettingsStoreRefMut : SettingsStoreRef
+    public class SettingsMapRef
     {
-        internal SettingsStoreRefMut(IntPtr ptr) : base(ptr) { }
+        internal IntPtr ptr;
+        internal SettingsMapRef(IntPtr ptr)
+        {
+            this.ptr = ptr;
+        }
+        public SettingsMapIter Iter()
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                return new SettingsMapIter(IntPtr.Zero);
+            }
+            return new SettingsMapIter(ASRNative.SettingsMap_iter(this.ptr));
+        }
     }
 
-    public class SettingsStore : SettingsStoreRefMut, IDisposable
+    public class SettingsMapRefMut : SettingsMapRef
+    {
+        internal SettingsMapRefMut(IntPtr ptr) : base(ptr) { }
+        public void Set(string key, bool value)
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                return;
+            }
+            ASRNative.SettingsMap_set_bool(this.ptr, key, value ? (byte)1 : (byte)0);
+        }
+    }
+
+    public class SettingsMap : SettingsMapRefMut, IDisposable
     {
         private void Drop()
         {
             if (ptr != IntPtr.Zero)
             {
-                ASRNative.SettingsStore_drop(this.ptr);
+                ASRNative.SettingsMap_drop(this.ptr);
                 ptr = IntPtr.Zero;
             }
         }
-        ~SettingsStore()
+        ~SettingsMap()
         {
             Drop();
         }
@@ -206,23 +240,83 @@ namespace LiveSplit.AutoSplittingRuntime
             Drop();
             GC.SuppressFinalize(this);
         }
-        public SettingsStore() : base(IntPtr.Zero)
+        public SettingsMap() : base(IntPtr.Zero)
         {
-            this.ptr = ASRNative.SettingsStore_new();
+            this.ptr = ASRNative.SettingsMap_new();
             if (this.ptr == IntPtr.Zero)
             {
                 throw new ArgumentException("Couldn't create the Settings Store.");
             }
         }
-        internal SettingsStore(IntPtr ptr) : base(ptr) { }
-        public void Set(string key, bool value)
+        internal SettingsMap(IntPtr ptr) : base(ptr) { }
+    }
+
+    public class SettingsMapIterRef
+    {
+        internal IntPtr ptr;
+        internal SettingsMapIterRef(IntPtr ptr)
+        {
+            this.ptr = ptr;
+        }
+    }
+
+    public class SettingsMapIterRefMut : SettingsMapIterRef
+    {
+        internal SettingsMapIterRefMut(IntPtr ptr) : base(ptr) { }
+        public bool HasCurrent()
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                return false;
+            }
+            return ASRNative.SettingsMapIter_has_current(this.ptr) != 0;
+        }
+        public void Next()
         {
             if (ptr == IntPtr.Zero)
             {
                 return;
             }
-            ASRNative.SettingsStore_set_bool(this.ptr, key, value ? (byte)1 : (byte)0);
+            ASRNative.SettingsMapIter_next(this.ptr);
         }
+        public string GetKey()
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                return "";
+            }
+            return ASRNative.SettingsMapIter_get_key(this.ptr);
+        }
+        public bool GetBoolValue()
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                return false;
+            }
+            return ASRNative.SettingsMapIter_get_bool_value(this.ptr) != 0;
+        }
+    }
+
+    public class SettingsMapIter : SettingsMapIterRefMut, IDisposable
+    {
+        private void Drop()
+        {
+            if (ptr != IntPtr.Zero)
+            {
+                ASRNative.SettingsMapIter_drop(this.ptr);
+                ptr = IntPtr.Zero;
+            }
+        }
+        ~SettingsMapIter()
+        {
+            Drop();
+        }
+        public void Dispose()
+        {
+            Drop();
+            GC.SuppressFinalize(this);
+        }
+        internal SettingsMapIter(IntPtr ptr) : base(ptr) { }
     }
 
     public delegate int StateDelegate();
@@ -234,7 +328,7 @@ namespace LiveSplit.AutoSplittingRuntime
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr Runtime_new(
             ASRString path,
-            IntPtr settings_store,
+            IntPtr settings_map,
             StateDelegate state,
             Action start,
             Action split,
@@ -266,13 +360,30 @@ namespace LiveSplit.AutoSplittingRuntime
         public static extern UIntPtr Runtime_user_settings_get_type(IntPtr self, UIntPtr index);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
         public static extern byte Runtime_user_settings_get_bool(IntPtr self, UIntPtr index);
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Runtime_settings_map_set_bool(IntPtr self, ASRString key, byte value);
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr Runtime_get_settings_map(IntPtr self);
 
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr SettingsStore_new();
+        public static extern IntPtr SettingsMap_new();
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SettingsStore_drop(IntPtr self);
+        public static extern void SettingsMap_drop(IntPtr self);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SettingsStore_set_bool(IntPtr self, ASRString key, byte value);
+        public static extern void SettingsMap_set_bool(IntPtr self, ASRString key, byte value);
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr SettingsMap_iter(IntPtr self);
+
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void SettingsMapIter_drop(IntPtr self);
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern byte SettingsMapIter_has_current(IntPtr self);
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void SettingsMapIter_next(IntPtr self);
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern ASRString SettingsMapIter_get_key(IntPtr self);
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern byte SettingsMapIter_get_bool_value(IntPtr self);
 
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
         public static extern UIntPtr get_buf_len();
