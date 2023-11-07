@@ -13,17 +13,27 @@ using System.IO;
 using LiveSplit.Options;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using LiveSplit.Model;
+using System.Globalization;
 
 namespace LiveSplit.AutoSplittingRuntime
 {
     public partial class ComponentSettings : UserControl
     {
-        public string ScriptPath { get; set; }
+        private string scriptPath;
+        public string ScriptPath
+        {
+            get => scriptPath;
+            set
+            {
+                if (value != scriptPath)
+                {
+                    scriptPath = value;
+                    this.ReloadRuntime(null);
+                }
+            }
+        }
 
         public Runtime runtime = null;
-
-        // if true, next path loaded from settings will be ignored
-        private bool _ignore_next_path_setting;
 
         private Dictionary<string, CheckBox> _basic_settings;
 
@@ -42,9 +52,6 @@ namespace LiveSplit.AutoSplittingRuntime
 
         // Start/Reset/Split checkboxes
         private Dictionary<string, bool> _basic_settings_state;
-
-        // Custom settings
-        public Dictionary<string, bool> _custom_settings_state;
 
         private static readonly LogDelegate log = (messagePtr, messageLen) =>
         {
@@ -66,7 +73,7 @@ namespace LiveSplit.AutoSplittingRuntime
         {
             InitializeComponent();
 
-            ScriptPath = string.Empty;
+            scriptPath = "";
 
             this.txtScriptPath.DataBindings.Add("Text", this, "ScriptPath", false,
                 DataSourceUpdateMode.OnPropertyChanged);
@@ -80,7 +87,6 @@ namespace LiveSplit.AutoSplittingRuntime
             };
 
             _basic_settings_state = new Dictionary<string, bool>();
-            _custom_settings_state = new Dictionary<string, bool>();
 
             getState = () =>
             {
@@ -106,11 +112,10 @@ namespace LiveSplit.AutoSplittingRuntime
         public ComponentSettings(TimerModel model, string scriptPath)
             : this(model)
         {
-            ScriptPath = scriptPath;
-            _ignore_next_path_setting = true;
+            this.ScriptPath = scriptPath;
         }
 
-        public void ReloadRuntime()
+        public void ReloadRuntime(SettingsMap settingsMap)
         {
             try
             {
@@ -122,16 +127,9 @@ namespace LiveSplit.AutoSplittingRuntime
 
                 if (!string.IsNullOrEmpty(ScriptPath))
                 {
-                    var settingsMap = new SettingsMap();
-
-                    foreach (var pair in _custom_settings_state)
-                    {
-                        settingsMap.Set(pair.Key, pair.Value);
-                    }
-
                     runtime = new Runtime(
                         ScriptPath,
-                        settingsMap,
+                        settingsMap ?? new SettingsMap(),
                         getState,
                         start,
                         split,
@@ -149,6 +147,12 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 Log.Error(ex);
             }
+
+            if (runtime != null)
+            {
+                try { runtime.Step(); } catch { }
+            }
+            BuildTree();
         }
 
         public void BuildTree()
@@ -188,8 +192,16 @@ namespace LiveSplit.AutoSplittingRuntime
                                 node.Tag = headingLevel;
                                 while (parentNode != null && (uint)parentNode.Tag >= headingLevel)
                                 {
-                                    parent = parentNode.Parent.Nodes;
-                                    parentNode = parentNode.Parent;
+                                    if (parentNode.Parent != null)
+                                    {
+                                        parent = parentNode.Parent.Nodes;
+                                        parentNode = parentNode.Parent;
+                                    }
+                                    else
+                                    {
+                                        parent = this.treeCustomSettings.Nodes;
+                                        parentNode = null;
+                                    }
                                 }
                                 break;
                             }
@@ -215,7 +227,6 @@ namespace LiveSplit.AutoSplittingRuntime
 
             settings_node.AppendChild(SettingsHelper.ToElement(document, "Version", "1.0"));
             settings_node.AppendChild(SettingsHelper.ToElement(document, "ScriptPath", ScriptPath));
-            AppendBasicSettingsToXml(document, settings_node);
             AppendCustomSettingsToXml(document, settings_node);
 
             return settings_node;
@@ -226,15 +237,13 @@ namespace LiveSplit.AutoSplittingRuntime
         public void SetSettings(XmlNode settings)
         {
             var element = (XmlElement)settings;
+            SettingsMap settingsMap = null;
             if (!element.IsEmpty)
             {
-                if (!_ignore_next_path_setting)
-                    ScriptPath = SettingsHelper.ParseString(element["ScriptPath"], string.Empty);
-                _ignore_next_path_setting = false;
-                ParseBasicSettingsFromXml(element);
-                ParseCustomSettingsFromXml(element);
+                scriptPath = SettingsHelper.ParseString(element["ScriptPath"], string.Empty);
+                settingsMap = ParseCustomSettingsFromXml(element);
             }
-            ReloadRuntime();
+            ReloadRuntime(settingsMap);
         }
 
         /// <summary>
@@ -259,64 +268,46 @@ namespace LiveSplit.AutoSplittingRuntime
             if (string.IsNullOrWhiteSpace(ScriptPath))
             {
                 _basic_settings_state.Clear();
-                _custom_settings_state.Clear();
             }
 
             InitBasicSettings(settings);
         }
 
-
-        private void AppendBasicSettingsToXml(XmlDocument document, XmlNode settings_node)
-        {
-            foreach (var item in _basic_settings)
-            {
-                if (_basic_settings_state.ContainsKey(item.Key.ToLower()))
-                {
-                    var value = _basic_settings_state[item.Key.ToLower()];
-                    settings_node.AppendChild(SettingsHelper.ToElement(document, item.Key, value));
-                }
-            }
-        }
-
         private void AppendCustomSettingsToXml(XmlDocument document, XmlNode parent)
         {
-            XmlElement asr_parent = document.CreateElement("CustomSettings");
+            XmlElement asrParent = document.CreateElement("CustomSettings");
 
             if (runtime != null)
             {
-                var settingsMap = runtime.GetSettingsMap();
-                var iter = settingsMap.Iter();
-                while (iter.HasCurrent())
+                using (var settingsMap = runtime.GetSettingsMap())
                 {
-                    XmlElement element = SettingsHelper.ToElement(document, "Setting", iter.GetBoolValue());
-                    XmlAttribute id = SettingsHelper.ToAttribute(document, "id", iter.GetKey());
-                    // In case there are other setting types in the future
-                    XmlAttribute type = SettingsHelper.ToAttribute(document, "type", "bool");
-
-                    element.Attributes.Append(id);
-                    element.Attributes.Append(type);
-                    asr_parent.AppendChild(element);
-
-                    iter.Next();
+                    BuildMap(document, asrParent, settingsMap);
                 }
             }
 
-            parent.AppendChild(asr_parent);
+            parent.AppendChild(asrParent);
         }
 
-        private void ParseBasicSettingsFromXml(XmlElement element)
+        private static void BuildMap(XmlDocument document, XmlElement parent, SettingsMap settingsMap)
         {
-            foreach (var item in _basic_settings)
+            using (var iter = settingsMap.Iter())
             {
-                if (element[item.Key] != null)
+                while (iter.HasCurrent())
                 {
-                    var value = bool.Parse(element[item.Key].InnerText);
+                    XmlElement element = document.CreateElement("Setting");
 
-                    // If component is not enabled, don't check setting
-                    if (item.Value.Enabled)
-                        item.Value.Checked = value;
+                    element.InnerText = iter.GetBoolValue().ToString(CultureInfo.InvariantCulture);
 
-                    _basic_settings_state[item.Key.ToLower()] = value;
+                    XmlAttribute id = SettingsHelper.ToAttribute(document, "id", iter.GetKey());
+
+                    // In case there are other setting types in the future
+                    XmlAttribute typeAttr = SettingsHelper.ToAttribute(document, "type", "bool");
+
+                    element.Attributes.Append(id);
+                    element.Attributes.Append(typeAttr);
+                    parent.AppendChild(element);
+
+                    iter.Next();
                 }
             }
         }
@@ -325,32 +316,59 @@ namespace LiveSplit.AutoSplittingRuntime
         /// Parses custom settings, stores them and updates the checked state of already added tree nodes.
         /// </summary>
         ///
-        private void ParseCustomSettingsFromXml(XmlElement data)
+        private SettingsMap ParseCustomSettingsFromXml(XmlElement data)
         {
-            XmlElement custom_settings_node = data["CustomSettings"];
-
-            _custom_settings_state.Clear();
-
-            if (custom_settings_node != null && custom_settings_node.HasChildNodes)
+            try
             {
-                foreach (XmlElement element in custom_settings_node.ChildNodes)
+                XmlElement custom_settings_node = data["CustomSettings"];
+
+                if (custom_settings_node == null)
                 {
-                    if (element.Name != "Setting")
-                        continue;
-
-                    string id = element.Attributes["id"].Value;
-                    string type = element.Attributes["type"].Value;
-
-                    if (id != null && type == "bool")
-                    {
-                        bool value = SettingsHelper.ParseBool(element);
-                        _custom_settings_state[id] = value;
-                    }
+                    return null;
                 }
+
+
+                return ParseMap(custom_settings_node);
+            }
+            catch
+            {
+                return null;
             }
 
             //// Update tree with loaded state (in case the tree is already populated)
             //UpdateNodesCheckedState(_custom_settings_state);
+        }
+
+        private SettingsMap ParseMap(XmlElement mapNode)
+        {
+            var map = new SettingsMap();
+
+            foreach (XmlElement element in mapNode.ChildNodes)
+            {
+                if (element.Name != "Setting")
+                    return null;
+
+                string id = element.Attributes["id"].Value;
+
+                if (id == null)
+                {
+                    return null;
+                }
+
+                string type = element.Attributes["type"].Value;
+
+                if (type == "bool")
+                {
+                    bool value = SettingsHelper.ParseBool(element);
+                    map.Set(id, value);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            return map;
         }
 
         private void InitBasicSettings(ASRSettings settings)
@@ -447,7 +465,6 @@ namespace LiveSplit.AutoSplittingRuntime
 
             if (node.Checked != value)
             {
-                _custom_settings_state[key] = value;
                 runtime?.SettingsMapSetBool(key, value);
             }
         }
@@ -468,7 +485,9 @@ namespace LiveSplit.AutoSplittingRuntime
             }
 
             if (dialog.ShowDialog() == DialogResult.OK)
-                ScriptPath = this.txtScriptPath.Text = dialog.FileName;
+            {
+                scriptPath = this.txtScriptPath.Text = dialog.FileName;
+            }
         }
 
         // Basic Setting checked/unchecked
@@ -497,7 +516,6 @@ namespace LiveSplit.AutoSplittingRuntime
         {
             if (!(e.Node.Tag is string)) return;
             var tag = (string)e.Node.Tag;
-            _custom_settings_state[tag] = e.Node.Checked;
             runtime?.SettingsMapSetBool(tag, e.Node.Checked);
         }
 

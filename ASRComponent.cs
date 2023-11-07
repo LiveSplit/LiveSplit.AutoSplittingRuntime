@@ -20,10 +20,6 @@ namespace LiveSplit.AutoSplittingRuntime
         private readonly Form parentForm;
         private Timer updateTimer;
 
-        private string oldScriptPath;
-
-        private const int MillisecondsPerSecond = 1000;
-
         static ASRComponent()
         {
             try
@@ -100,24 +96,6 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 InvokeIfNeeded(() =>
                 {
-                    if (settings.ScriptPath != oldScriptPath)
-                    {
-                        oldScriptPath = settings.ScriptPath;
-
-                        // Try to load the new autosplitter
-                        // Run it once to let it register it's settings
-                        // Whatever happens, we need to rebuild the custom settings tree
-                        try
-                        {
-                            settings.ReloadRuntime();
-                            settings.runtime?.Step();
-                        }
-                        finally
-                        {
-                            settings.BuildTree();
-                        }
-                    }
-
                     if (settings.runtime != null)
                     {
                         settings.runtime.Step();

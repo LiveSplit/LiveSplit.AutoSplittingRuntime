@@ -61,7 +61,7 @@ namespace LiveSplit.AutoSplittingRuntime
             IntPtr settingsMapPtr = settingsMap.ptr;
             if (settingsMapPtr == IntPtr.Zero)
             {
-                throw new ArgumentException("The Settings Store is disposed.");
+                throw new ArgumentException("The settings map is disposed.");
             }
             settingsMap.ptr = IntPtr.Zero;
             this.ptr = ASRNative.Runtime_new(
