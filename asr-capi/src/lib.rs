@@ -1,10 +1,14 @@
 #[cfg(target_pointer_width = "64")]
 use {
-    livesplit_auto_splitting::{
-        time, Config, SettingValue, SettingsMap, Timer, TimerState, UserSettingKind,
-    },
-    std::{cell::RefCell, ffi::CStr, fmt, fs, sync::Arc},
+    livesplit_auto_splitting::{time, Timer, TimerState},
+    std::{cell::RefCell, ffi::CStr, fmt},
 };
+
+mod runtime;
+mod setting_value;
+mod settings_list;
+mod settings_map;
+mod user_settings;
 
 #[cfg(target_pointer_width = "64")]
 thread_local! {
@@ -16,10 +20,9 @@ fn output_vec<F>(f: F) -> *const u8
 where
     F: FnOnce(&mut Vec<u8>),
 {
-    OUTPUT_VEC.with(|output| {
-        let mut output = output.borrow_mut();
+    OUTPUT_VEC.with_borrow_mut(|output| {
         output.clear();
-        f(&mut output);
+        f(output);
         output.push(0);
         output.as_ptr()
     })
@@ -40,321 +43,6 @@ unsafe fn str(s: *const u8) -> &'static str {
         let bytes = CStr::from_ptr(s.cast()).to_bytes();
         std::str::from_utf8_unchecked(bytes)
     }
-}
-
-#[cfg(target_pointer_width = "64")]
-pub struct Runtime {
-    runtime: livesplit_auto_splitting::Runtime<CTimer>,
-}
-
-#[cfg(not(target_pointer_width = "64"))]
-pub type Runtime = ();
-
-#[cfg(not(target_pointer_width = "64"))]
-pub type SettingsMap = ();
-
-#[no_mangle]
-pub extern "C" fn SettingsMap_new() -> Box<SettingsMap> {
-    #[cfg(target_pointer_width = "64")]
-    {
-        Box::new(SettingsMap::new())
-    }
-    #[cfg(not(target_pointer_width = "64"))]
-    Box::new(())
-}
-
-#[no_mangle]
-pub extern "C" fn SettingsMap_drop(_: Box<SettingsMap>) {}
-
-/// # Safety
-/// TODO:
-#[no_mangle]
-pub unsafe extern "C" fn SettingsMap_set_bool(
-    _this: &mut SettingsMap,
-    _key_ptr: *const u8,
-    _value: bool,
-) {
-    #[cfg(target_pointer_width = "64")]
-    {
-        _this.insert(str(_key_ptr as _).into(), SettingValue::Bool(_value));
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn SettingsMap_iter<'a>(
-    _this: &'a SettingsMap,
-    _key_ptr: *const u8,
-) -> Box<SettingsMapIter<'_>> {
-    #[cfg(target_pointer_width = "64")]
-    {
-        Box::new(SettingsMapIter {
-            iter: (Box::new(_this.iter())
-                as Box<dyn Iterator<Item = (&'a str, &'a SettingValue)> + 'a>)
-                .peekable(),
-        })
-    }
-    #[cfg(not(target_pointer_width = "64"))]
-    Box::new(SettingsMapIter {
-        _phantom: std::marker::PhantomData,
-    })
-}
-
-#[cfg(target_pointer_width = "64")]
-pub struct SettingsMapIter<'a> {
-    iter: std::iter::Peekable<Box<dyn Iterator<Item = (&'a str, &'a SettingValue)> + 'a>>,
-}
-
-#[cfg(not(target_pointer_width = "64"))]
-pub struct SettingsMapIter<'a> {
-    _phantom: std::marker::PhantomData<&'a ()>,
-}
-
-#[no_mangle]
-pub extern "C" fn SettingsMapIter_drop(_: Box<SettingsMapIter<'_>>) {}
-
-#[no_mangle]
-pub extern "C" fn SettingsMapIter_has_current(_this: &mut SettingsMapIter<'_>) -> bool {
-    #[cfg(target_pointer_width = "64")]
-    {
-        _this.iter.peek().is_some()
-    }
-    #[cfg(not(target_pointer_width = "64"))]
-    false
-}
-
-#[no_mangle]
-pub extern "C" fn SettingsMapIter_next(_this: &mut SettingsMapIter<'_>) {
-    #[cfg(target_pointer_width = "64")]
-    {
-        _this.iter.next();
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn SettingsMapIter_get_key(_this: &mut SettingsMapIter<'_>) -> *const u8 {
-    #[cfg(target_pointer_width = "64")]
-    {
-        output_str(_this.iter.peek().unwrap().0)
-    }
-    #[cfg(not(target_pointer_width = "64"))]
-    panic!("Index out of bounds")
-}
-
-#[no_mangle]
-pub extern "C" fn SettingsMapIter_get_bool_value(_this: &mut SettingsMapIter<'_>) -> bool {
-    #[cfg(target_pointer_width = "64")]
-    {
-        match _this.iter.peek().unwrap().1 {
-            SettingValue::Bool(v) => *v,
-            _ => false,
-        }
-    }
-    #[cfg(not(target_pointer_width = "64"))]
-    panic!("Index out of bounds")
-}
-
-/// # Safety
-/// TODO:
-#[no_mangle]
-pub unsafe extern "C" fn Runtime_new(
-    _path_ptr: *const u8,
-    _settings_map: Box<SettingsMap>,
-    _state: unsafe extern "C" fn() -> i32,
-    _start: unsafe extern "C" fn(),
-    _split: unsafe extern "C" fn(),
-    _skip_split: unsafe extern "C" fn(),
-    _undo_split: unsafe extern "C" fn(),
-    _reset: unsafe extern "C" fn(),
-    _set_game_time: unsafe extern "C" fn(i64),
-    _pause_game_time: unsafe extern "C" fn(),
-    _resume_game_time: unsafe extern "C" fn(),
-    _log: unsafe extern "C" fn(*const u8, usize),
-) -> Option<Box<Runtime>> {
-    #[cfg(target_pointer_width = "64")]
-    {
-        let path = str(_path_ptr);
-        let file = fs::read(path).ok()?;
-
-        let mut config = Config::default();
-        config.settings_map = Some(*_settings_map);
-
-        let runtime = livesplit_auto_splitting::Runtime::new(
-            &file,
-            CTimer {
-                state: _state,
-                start: _start,
-                split: _split,
-                skip_split: _skip_split,
-                undo_split: _undo_split,
-                reset: _reset,
-                set_game_time: _set_game_time,
-                pause_game_time: _pause_game_time,
-                resume_game_time: _resume_game_time,
-                log: _log,
-            },
-            config,
-        )
-        .ok()?;
-
-        Some(Box::new(Runtime { runtime }))
-    }
-    #[cfg(not(target_pointer_width = "64"))]
-    Some(Box::new(()))
-}
-
-#[no_mangle]
-pub extern "C" fn Runtime_drop(_: Box<Runtime>) {}
-
-#[no_mangle]
-pub extern "C" fn Runtime_step(_this: &Runtime) -> bool {
-    #[cfg(target_pointer_width = "64")]
-    {
-        _this.runtime.lock().update().is_ok()
-    }
-    #[cfg(not(target_pointer_width = "64"))]
-    true
-}
-
-#[no_mangle]
-pub extern "C" fn Runtime_tick_rate(_this: &Runtime) -> u64 {
-    const TICKS_PER_SEC: u64 = 10_000_000;
-    const NANOS_PER_SEC: u64 = 1_000_000_000;
-    const NANOS_PER_TICK: u64 = NANOS_PER_SEC / TICKS_PER_SEC;
-
-    #[cfg(target_pointer_width = "64")]
-    let tick_rate = _this.runtime.tick_rate();
-    #[cfg(not(target_pointer_width = "64"))]
-    let tick_rate = std::time::Duration::new(1, 0) / 120;
-
-    let (secs, nanos) = (tick_rate.as_secs(), tick_rate.subsec_nanos());
-
-    secs * TICKS_PER_SEC + nanos as u64 / NANOS_PER_TICK
-}
-
-#[no_mangle]
-pub extern "C" fn Runtime_user_settings_len(_this: &Runtime) -> usize {
-    #[cfg(target_pointer_width = "64")]
-    {
-        _this.runtime.user_settings().len()
-    }
-    #[cfg(not(target_pointer_width = "64"))]
-    0
-}
-
-#[no_mangle]
-pub extern "C" fn Runtime_user_settings_get_key(_this: &Runtime, _index: usize) -> *const u8 {
-    #[cfg(target_pointer_width = "64")]
-    {
-        output_str(&_this.runtime.user_settings()[_index].key)
-    }
-    #[cfg(not(target_pointer_width = "64"))]
-    panic!("Index out of bounds")
-}
-
-#[no_mangle]
-pub extern "C" fn Runtime_user_settings_get_description(
-    _this: &Runtime,
-    _index: usize,
-) -> *const u8 {
-    #[cfg(target_pointer_width = "64")]
-    {
-        output_str(&_this.runtime.user_settings()[_index].description)
-    }
-    #[cfg(not(target_pointer_width = "64"))]
-    panic!("Index out of bounds")
-}
-
-#[no_mangle]
-pub extern "C" fn Runtime_user_settings_get_tooltip(_this: &Runtime, _index: usize) -> *const u8 {
-    #[cfg(target_pointer_width = "64")]
-    {
-        output_str(
-            _this.runtime.user_settings()[_index]
-                .tooltip
-                .as_deref()
-                .unwrap_or_default(),
-        )
-    }
-    #[cfg(not(target_pointer_width = "64"))]
-    panic!("Index out of bounds")
-}
-
-#[no_mangle]
-pub extern "C" fn Runtime_user_settings_get_type(_this: &Runtime, _index: usize) -> usize {
-    #[cfg(target_pointer_width = "64")]
-    {
-        match _this.runtime.user_settings()[_index].kind {
-            UserSettingKind::Bool { .. } => 1,
-            UserSettingKind::Title { .. } => 2,
-        }
-    }
-    #[cfg(not(target_pointer_width = "64"))]
-    panic!("Index out of bounds")
-}
-
-#[no_mangle]
-pub extern "C" fn Runtime_user_settings_get_bool(_this: &Runtime, _index: usize) -> bool {
-    #[cfg(target_pointer_width = "64")]
-    {
-        let setting = &_this.runtime.user_settings()[_index];
-        let UserSettingKind::Bool { default_value } = setting.kind else {
-            return false;
-        };
-        match _this.runtime.settings_map().get(&setting.key) {
-            Some(SettingValue::Bool(stored)) => *stored,
-            _ => default_value,
-        }
-    }
-    #[cfg(not(target_pointer_width = "64"))]
-    panic!("Index out of bounds")
-}
-
-#[no_mangle]
-pub extern "C" fn Runtime_user_settings_get_heading_level(_this: &Runtime, _index: usize) -> u32 {
-    #[cfg(target_pointer_width = "64")]
-    {
-        let setting = &_this.runtime.user_settings()[_index];
-        let UserSettingKind::Title { heading_level } = setting.kind else {
-            return 0;
-        };
-        heading_level
-    }
-    #[cfg(not(target_pointer_width = "64"))]
-    panic!("Index out of bounds")
-}
-
-/// # Safety
-/// TODO:
-#[no_mangle]
-pub unsafe extern "C" fn Runtime_settings_map_set_bool(
-    _this: &Runtime,
-    _key: *const u8,
-    _value: bool,
-) {
-    #[cfg(target_pointer_width = "64")]
-    {
-        let key = Arc::<str>::from(str(_key));
-        loop {
-            let mut map = _this.runtime.settings_map();
-            let old = map.clone();
-            map.insert(key.clone(), SettingValue::Bool(_value));
-            if _this.runtime.set_settings_map_if_unchanged(&old, map) {
-                break;
-            }
-        }
-    }
-    #[cfg(not(target_pointer_width = "64"))]
-    panic!("Index out of bounds")
-}
-
-#[no_mangle]
-pub extern "C" fn Runtime_get_settings_map(_this: &Runtime) -> Box<SettingsMap> {
-    #[cfg(target_pointer_width = "64")]
-    {
-        Box::new(_this.runtime.settings_map())
-    }
-    #[cfg(not(target_pointer_width = "64"))]
-    Box::new(())
 }
 
 #[cfg(target_pointer_width = "64")]
@@ -423,16 +111,23 @@ impl Timer for CTimer {
     fn set_variable(&mut self, _: &str, _: &str) {}
 
     fn log(&mut self, message: fmt::Arguments<'_>) {
-        let owned;
-        let message = match message.as_str() {
-            Some(m) => m,
-            None => {
-                owned = message.to_string();
-                &owned
-            }
-        };
-        unsafe { (self.log)(message.as_ptr(), message.len()) }
+        log(self.log, message);
     }
+}
+
+#[cfg(target_pointer_width = "64")]
+fn log(log_fn: unsafe extern "C" fn(*const u8, usize), message: fmt::Arguments<'_>) {
+    let mut owned;
+    let message = match message.as_str() {
+        Some(m) => m,
+        None => {
+            owned = smallstr::SmallString::<[u8; 4 << 10]>::new();
+            use std::fmt::Write;
+            let _ = write!(owned, "{message}");
+            &owned
+        }
+    };
+    unsafe { log_fn(message.as_ptr(), message.len()) }
 }
 
 /// Returns the byte length of the last nul-terminated string returned on the

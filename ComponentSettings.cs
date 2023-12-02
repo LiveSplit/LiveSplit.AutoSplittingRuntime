@@ -1,17 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Drawing;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 using LiveSplit.UI;
 using System.IO;
 using LiveSplit.Options;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using LiveSplit.Model;
 using System.Globalization;
 
@@ -35,23 +28,8 @@ namespace LiveSplit.AutoSplittingRuntime
 
         public Runtime runtime = null;
 
-        private Dictionary<string, CheckBox> _basic_settings;
-
-        // Save the state of settings independant of actual ASRSetting objects
-        // or the actual GUI components (checkboxes). This is used to restore
-        // the state when the script is first loaded (because settings are
-        // loaded before the script) or reloaded.
-        //
-        // State is synchronized with the ASRSettings when a script is
-        // successfully loaded, as well as when the checkboxes/tree check
-        // state is changed by the user or program. It is also updated
-        // when loaded from XML.
-        //
-        // State is stored from the current script, or the last loaded script
-        // if no script is currently loaded.
-
-        // Start/Reset/Split checkboxes
-        private Dictionary<string, bool> _basic_settings_state;
+        public SettingsMap previousSettings = null;
+        public UserSettings previousUserSettings = null;
 
         private static readonly LogDelegate log = (messagePtr, messageLen) =>
         {
@@ -77,16 +55,6 @@ namespace LiveSplit.AutoSplittingRuntime
 
             this.txtScriptPath.DataBindings.Add("Text", this, "ScriptPath", false,
                 DataSourceUpdateMode.OnPropertyChanged);
-
-            _basic_settings = new Dictionary<string, CheckBox>
-            {
-                // Capitalized names for saving it in XML.
-                ["Start"] = checkboxStart,
-                ["Reset"] = checkboxReset,
-                ["Split"] = checkboxSplit
-            };
-
-            _basic_settings_state = new Dictionary<string, bool>();
 
             getState = () =>
             {
@@ -123,13 +91,18 @@ namespace LiveSplit.AutoSplittingRuntime
                 {
                     runtime.Dispose();
                     runtime = null;
+                    previousSettings?.Dispose();
+                    previousSettings = null;
+                    previousUserSettings?.Dispose();
+                    previousUserSettings = null;
+                    BuildTree();
                 }
 
                 if (!string.IsNullOrEmpty(ScriptPath))
                 {
                     runtime = new Runtime(
                         ScriptPath,
-                        settingsMap ?? new SettingsMap(),
+                        settingsMap,
                         getState,
                         start,
                         split,
@@ -147,78 +120,152 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 Log.Error(ex);
             }
-
-            if (runtime != null)
-            {
-                try { runtime.Step(); } catch { }
-            }
-            BuildTree();
         }
 
         public void BuildTree()
         {
-            this.treeCustomSettings.BeginUpdate();
-            this.treeCustomSettings.Nodes.Clear();
+            this.settingsTable.Controls.Clear();
+            this.settingsTable.RowCount = 0;
+            this.settingsTable.RowStyles.Clear();
 
             if (runtime != null)
             {
+                previousUserSettings?.Dispose();
+                var userSettings = previousUserSettings = runtime.GetUserSettings();
 
-                var parent = this.treeCustomSettings.Nodes;
-                TreeNode parentNode = null;
+                previousSettings?.Dispose();
+                var settingsMap = previousSettings = runtime.GetSettingsMap();
 
-                var len = runtime.UserSettingsLength();
+                var len = userSettings.GetLength();
+
+                var margin = 0;
+
                 for (ulong i = 0; i < len; i++)
                 {
-                    var desc = runtime.UserSettingGetDescription(i);
-                    var tooltip = runtime.UserSettingGetTooltip(i);
-                    var ty = runtime.UserSettingGetType(i);
-
-                    var node = new TreeNode(desc)
-                    {
-                        ToolTipText = tooltip,
-                    };
+                    var desc = userSettings.GetDescription(i);
+                    var tooltip = userSettings.GetTooltip(i);
+                    var ty = userSettings.GetType(i);
 
                     switch (ty)
                     {
                         case "bool":
                             {
-                                node.Tag = runtime.UserSettingGetKey(i);
-                                node.Checked = runtime.UserSettingGetBool(i);
+                                var checkbox = new CheckBox
+                                {
+                                    Text = desc,
+                                    Tag = userSettings.GetKey(i),
+                                    Margin = new Padding(margin, 0, 0, 0),
+                                    Checked = userSettings.GetBool(i, settingsMap)
+                                };
+                                checkbox.CheckedChanged += Checkbox_CheckedChanged;
+                                checkbox.Anchor |= AnchorStyles.Right;
+                                this.toolTip.SetToolTip(checkbox, tooltip);
+                                this.settingsTable.Controls.Add(checkbox, 0, this.settingsTable.RowStyles.Count);
+                                this.settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, checkbox.Height));
                                 break;
                             }
                         case "title":
                             {
-                                var headingLevel = runtime.UserSettingGetHeadingLevel(i);
-                                node.Tag = headingLevel;
-                                while (parentNode != null && (uint)parentNode.Tag >= headingLevel)
+                                var headingLevel = (int)userSettings.GetHeadingLevel(i);
+                                margin = 20 * headingLevel;
+                                var label = new Label
                                 {
-                                    if (parentNode.Parent != null)
-                                    {
-                                        parent = parentNode.Parent.Nodes;
-                                        parentNode = parentNode.Parent;
-                                    }
-                                    else
-                                    {
-                                        parent = this.treeCustomSettings.Nodes;
-                                        parentNode = null;
-                                    }
-                                }
+                                    Margin = new Padding(margin, 0, 0, 0),
+                                    Text = desc
+                                };
+                                margin += 20;
+                                label.Font = new Font(label.Font.FontFamily, 12, FontStyle.Underline);
+                                label.Anchor |= AnchorStyles.Right;
+                                this.toolTip.SetToolTip(label, tooltip);
+                                this.settingsTable.Controls.Add(label, 0, this.settingsTable.RowStyles.Count);
+                                this.settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, label.Height));
                                 break;
                             }
-                        default: continue;
-                    }
+                        case "choice":
+                            {
+                                var label = new Label
+                                {
+                                    Text = desc,
+                                    Margin = new Padding(margin, 0, 0, 0)
+                                };
+                                label.Anchor |= AnchorStyles.Right;
+                                this.toolTip.SetToolTip(label, tooltip);
+                                this.settingsTable.Controls.Add(label, 0, this.settingsTable.RowStyles.Count);
+                                this.settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, label.Height));
 
-                    parent.Add(node);
-
-                    if (ty == "title")
-                    {
-                        parent = node.Nodes;
-                        parentNode = node;
+                                var combo = new ComboBox
+                                {
+                                    Tag = userSettings.GetKey(i),
+                                    Margin = new Padding(margin, 0, 0, 0),
+                                    DropDownStyle = ComboBoxStyle.DropDownList
+                                };
+                                combo.Anchor |= AnchorStyles.Right;
+                                this.toolTip.SetToolTip(combo, tooltip);
+                                var choicesLen = userSettings.GetChoiceOptionsLength(i);
+                                for (ulong choiceIndex = 0; choiceIndex < choicesLen; choiceIndex++)
+                                {
+                                    var choice = new Choice
+                                    {
+                                        description = userSettings.GetChoiceOptionDescription(i, choiceIndex),
+                                        key = userSettings.GetChoiceOptionKey(i, choiceIndex)
+                                    };
+                                    combo.Items.Add(choice);
+                                }
+                                combo.SelectedIndex = (int)userSettings.GetChoiceCurrentIndex(i, settingsMap);
+                                combo.SelectedIndexChanged += Combo_SelectedIndexChanged;
+                                this.settingsTable.Controls.Add(combo, 0, this.settingsTable.RowStyles.Count);
+                                this.settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, combo.Height + 5));
+                                break;
+                            }
+                        default:
+                            {
+                                break;
+                            }
                     }
                 }
             }
+        }
 
-            this.treeCustomSettings.EndUpdate();
+        private void Combo_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            var combo = (ComboBox)sender;
+            if (!(combo.Tag is string)) return;
+            if (!(combo.SelectedItem is Choice)) return;
+            var choice = (Choice)combo.SelectedItem;
+
+            if (runtime != null)
+            {
+                runtime.SettingsMapSetString((string)combo.Tag, choice.key);
+                var prev = previousSettings;
+                previousSettings = runtime.GetSettingsMap();
+                prev?.Dispose();
+            }
+        }
+
+        class Choice
+        {
+            public string key;
+            public string description;
+
+            public override string ToString()
+            {
+                return description;
+            }
+        }
+
+        private void Checkbox_CheckedChanged(object sender, EventArgs e)
+        {
+            var checkbox = (CheckBox)sender;
+            if (!(checkbox.Tag is string)) return;
+
+            if (runtime != null)
+            {
+                runtime.SettingsMapSetBool((string)checkbox.Tag, checkbox.Checked);
+                var prev = previousSettings;
+                previousSettings = runtime.GetSettingsMap();
+                prev?.Dispose();
+            }
+
         }
 
         public XmlNode GetSettings(XmlDocument document)
@@ -237,40 +284,23 @@ namespace LiveSplit.AutoSplittingRuntime
         public void SetSettings(XmlNode settings)
         {
             var element = (XmlElement)settings;
-            SettingsMap settingsMap = null;
             if (!element.IsEmpty)
             {
-                scriptPath = SettingsHelper.ParseString(element["ScriptPath"], string.Empty);
-                settingsMap = ParseCustomSettingsFromXml(element);
+                var newScriptPath = SettingsHelper.ParseString(element["ScriptPath"], string.Empty);
+                var settingsMap = ParseCustomSettingsFromXml(element);
+                if (newScriptPath != scriptPath)
+                {
+                    scriptPath = newScriptPath;
+                    this.ReloadRuntime(settingsMap);
+                }
+                else if (runtime != null)
+                {
+                    var prev = previousSettings;
+                    previousSettings = settingsMap ?? new SettingsMap();
+                    prev?.Dispose();
+                    runtime.SetSettingsMap(previousSettings);
+                }
             }
-            ReloadRuntime(settingsMap);
-        }
-
-        /// <summary>
-        /// Populates the component with the settings defined in the ASR script.
-        /// </summary>
-        public void SetASRSettings(ASRSettings settings)
-        {
-            InitASRSettings(settings, true);
-        }
-
-        /// <summary>
-        /// Empties the GUI of all settings (but still keeps settings state
-        /// for the next script load).
-        /// </summary>
-        public void ResetASRSettings()
-        {
-            InitASRSettings(new ASRSettings(), false);
-        }
-
-        private void InitASRSettings(ASRSettings settings, bool script_loaded)
-        {
-            if (string.IsNullOrWhiteSpace(ScriptPath))
-            {
-                _basic_settings_state.Clear();
-            }
-
-            InitBasicSettings(settings);
         }
 
         private void AppendCustomSettingsToXml(XmlDocument document, XmlNode parent)
@@ -281,35 +311,96 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 using (var settingsMap = runtime.GetSettingsMap())
                 {
-                    BuildMap(document, asrParent, settingsMap);
+                    if (settingsMap != null)
+                    {
+                        BuildMap(document, asrParent, settingsMap);
+                    }
                 }
             }
 
             parent.AppendChild(asrParent);
         }
 
-        private static void BuildMap(XmlDocument document, XmlElement parent, SettingsMap settingsMap)
+        private static void BuildMap(XmlDocument document, XmlElement parent, SettingsMapRef settingsMap)
         {
-            using (var iter = settingsMap.Iter())
+            var len = settingsMap.GetLength();
+            for (ulong i = 0; i < len; i++)
             {
-                while (iter.HasCurrent())
+                XmlElement element = BuildValue(document, settingsMap.GetValue(i));
+
+                if (element != null)
                 {
-                    XmlElement element = document.CreateElement("Setting");
-
-                    element.InnerText = iter.GetBoolValue().ToString(CultureInfo.InvariantCulture);
-
-                    XmlAttribute id = SettingsHelper.ToAttribute(document, "id", iter.GetKey());
-
-                    // In case there are other setting types in the future
-                    XmlAttribute typeAttr = SettingsHelper.ToAttribute(document, "type", "bool");
-
-                    element.Attributes.Append(id);
-                    element.Attributes.Append(typeAttr);
+                    XmlAttribute id = SettingsHelper.ToAttribute(document, "id", settingsMap.GetKey(i));
+                    element.Attributes.Prepend(id);
                     parent.AppendChild(element);
-
-                    iter.Next();
                 }
             }
+        }
+
+        private static void BuildList(XmlDocument document, XmlElement parent, SettingsListRef settingsList)
+        {
+            var len = settingsList.GetLength();
+            for (ulong i = 0; i < len; i++)
+            {
+                XmlElement element = BuildValue(document, settingsList.Get(i));
+
+                if (element != null)
+                {
+                    parent.AppendChild(element);
+                }
+            }
+        }
+
+        private static XmlElement BuildValue(XmlDocument document, SettingValueRef value)
+        {
+            XmlElement element = document.CreateElement("Setting");
+
+            var type = value.GetKind();
+
+            XmlAttribute typeAttr = SettingsHelper.ToAttribute(document, "type", type);
+            element.Attributes.Append(typeAttr);
+
+            switch (type)
+            {
+                case "map":
+                    {
+                        BuildMap(document, element, value.GetMap());
+                        break;
+                    }
+                case "list":
+                    {
+                        BuildList(document, element, value.GetList());
+                        break;
+                    }
+                case "bool":
+                    {
+                        element.InnerText = value.GetBool().ToString(CultureInfo.InvariantCulture);
+                        break;
+                    }
+                case "i64":
+                    {
+                        element.InnerText = value.GetI64().ToString(CultureInfo.InvariantCulture);
+                        break;
+                    }
+                case "f64":
+                    {
+                        element.InnerText = value.GetF64().ToString(CultureInfo.InvariantCulture);
+                        break;
+                    }
+                case "string":
+                    {
+                        var attribute = SettingsHelper.ToAttribute(document, "value", value.GetString());
+                        element.Attributes.Append(attribute);
+                        break;
+                    }
+                default:
+                    {
+                        return null;
+                    }
+            }
+
+
+            return element;
         }
 
         /// <summary>
@@ -327,16 +418,12 @@ namespace LiveSplit.AutoSplittingRuntime
                     return null;
                 }
 
-
                 return ParseMap(custom_settings_node);
             }
             catch
             {
                 return null;
             }
-
-            //// Update tree with loaded state (in case the tree is already populated)
-            //UpdateNodesCheckedState(_custom_settings_state);
         }
 
         private SettingsMap ParseMap(XmlElement mapNode)
@@ -355,122 +442,86 @@ namespace LiveSplit.AutoSplittingRuntime
                     return null;
                 }
 
-                string type = element.Attributes["type"].Value;
-
-                if (type == "bool")
-                {
-                    bool value = SettingsHelper.ParseBool(element);
-                    map.Set(id, value);
-                }
-                else
+                var value = ParseValue(element);
+                if (value == null)
                 {
                     return null;
                 }
+
+                map.Insert(id, value);
             }
 
             return map;
         }
 
-        private void InitBasicSettings(ASRSettings settings)
+        private SettingsList ParseList(XmlElement listNode)
         {
-            foreach (var item in _basic_settings)
-            {
-                string name = item.Key.ToLower();
-                CheckBox checkbox = item.Value;
+            var list = new SettingsList();
 
-                if (settings.IsBasicSettingPresent(name))
+            foreach (XmlElement element in listNode.ChildNodes)
+            {
+                if (element.Name != "Setting")
+                    return null;
+
+                var value = ParseValue(element);
+                if (value == null)
                 {
-                    ASRSetting setting = settings.BasicSettings[name];
-                    checkbox.Enabled = true;
-                    checkbox.Tag = setting;
-                    var value = setting.Value;
-
-                    if (_basic_settings_state.ContainsKey(name))
-                        value = _basic_settings_state[name];
-
-                    checkbox.Checked = value;
-                    setting.Value = value;
+                    return null;
                 }
-                else
+
+                list.Push(value);
+            }
+
+            return list;
+        }
+
+        private SettingValue ParseValue(XmlElement element)
+        {
+            string type = element.Attributes["type"].Value;
+
+            if (type == "bool")
+            {
+                bool value = SettingsHelper.ParseBool(element);
+                return new SettingValue(value);
+            }
+            else if (type == "i64")
+            {
+                long value = long.Parse(element.InnerText);
+                return new SettingValue(value);
+            }
+            else if (type == "f64")
+            {
+                double value = SettingsHelper.ParseDouble(element);
+                return new SettingValue(value);
+            }
+            else if (type == "string")
+            {
+                string value = element.Attributes["value"].Value;
+                return new SettingValue(value);
+            }
+            else if (type == "map")
+            {
+                var value = ParseMap(element);
+                if (value == null)
                 {
-                    checkbox.Tag = null;
-                    checkbox.Enabled = false;
-                    checkbox.Checked = false;
+                    return null;
                 }
+                return new SettingValue(value);
             }
-        }
-
-        /// <summary>
-        /// Generic update on all given nodes and their childnodes, ignoring childnodes for
-        /// nodes where the Func returns false.
-        /// </summary>
-        ///
-        private void UpdateNodesInTree(Func<TreeNode, bool> func, TreeNodeCollection nodes)
-        {
-            foreach (TreeNode node in nodes)
+            else if (type == "list")
             {
-                bool include_child_nodes = func(node);
-                if (include_child_nodes)
-                    UpdateNodesInTree(func, node.Nodes);
+                var value = ParseList(element);
+                if (value == null)
+                {
+                    return null;
+                }
+                return new SettingValue(value);
             }
-        }
-
-        ///// <summary>
-        ///// Update the checked state of all given nodes and their childnodes based on the return
-        ///// value of the given Func.
-        ///// </summary>
-        ///// <param name="nodes">If nodes is null, all nodes of the custom settings tree are affected.</param>
-        /////
-        //private void UpdateNodesCheckedState(Func<ASRSetting, bool> func, TreeNodeCollection nodes = null)
-        //{
-        //    if (nodes == null)
-        //        nodes = this.treeCustomSettings.Nodes;
-
-        //    UpdateNodesInTree(node => {
-        //        var setting = (ASRSetting)node.Tag;
-        //        bool check = func(setting);
-
-        //        if (node.Checked != check)
-        //            node.Checked = check;
-
-        //        return true;
-        //    }, nodes);
-        //}
-
-        ///// <summary>
-        ///// Update the checked state of all given nodes and their childnodes
-        ///// based on a dictionary of setting values.
-        ///// </summary>
-        /////
-        //private void UpdateNodesCheckedState(Dictionary<string, bool> setting_values, TreeNodeCollection nodes = null)
-        //{
-        //    if (setting_values == null)
-        //        return;
-
-        //    UpdateNodesCheckedState(setting => {
-        //        string id = setting.Id;
-
-        //        if (setting_values.ContainsKey(id))
-        //            return setting_values[id];
-
-        //        return setting.Value;
-        //    }, nodes);
-        //}
-
-        private void UpdateNodeCheckedState(bool value, TreeNode node)
-        {
-            if (!(node.Tag is string)) return;
-
-            var key = (string)node.Tag;
-
-            if (node.Checked != value)
+            else
             {
-                runtime?.SettingsMapSetBool(key, value);
+                return null;
             }
         }
-
-
-        // Events
 
         private void btnSelectFile_Click(object sender, EventArgs e)
         {
@@ -490,76 +541,8 @@ namespace LiveSplit.AutoSplittingRuntime
             }
         }
 
-        // Basic Setting checked/unchecked
-        //
-        // This detects both changes made by the user and by the program, so this should
-        // change the state in _basic_settings_state fine as well.
-        private void methodCheckbox_CheckedChanged(object sender, EventArgs e)
-        {
-            var checkbox = (CheckBox)sender;
-            var setting = (ASRSetting)checkbox.Tag;
-
-            if (setting != null)
-            {
-                setting.Value = checkbox.Checked;
-                _basic_settings_state[setting.Id] = setting.Value;
-            }
-        }
-
         private void ComponentSettings_Load(object sender, EventArgs e)
         {
-            BuildTree();
-        }
-
-        // Custom Setting checked/unchecked (only after initially building the tree)
-        private void settingsTree_AfterCheck(object sender, TreeViewEventArgs e)
-        {
-            if (!(e.Node.Tag is string)) return;
-            var tag = (string)e.Node.Tag;
-            runtime?.SettingsMapSetBool(tag, e.Node.Checked);
-        }
-
-        private void cmiCheckBranch_Click(object sender, EventArgs e)
-        {
-            UpdateNodeCheckedState(true, this.treeCustomSettings.SelectedNode);
-        }
-
-        private void cmiUncheckBranch_Click(object sender, EventArgs e)
-        {
-            UpdateNodeCheckedState(false, this.treeCustomSettings.SelectedNode);
-        }
-    }
-}
-
-namespace LiveSplit.UI.Components
-{
-    /// <summary>
-    /// TreeView with fixed double-clicking on checkboxes.
-    /// </summary>
-    ///
-    /// See also:
-    /// http://stackoverflow.com/questions/17356976/treeview-with-checkboxes-not-processing-clicks-correctly
-    /// http://stackoverflow.com/questions/14647216/c-sharp-treeview-ignore-double-click-only-at-checkbox
-    class NewTreeView : System.Windows.Forms.TreeView
-    {
-        protected override void WndProc(ref Message m)
-        {
-            if (m.Msg == 0x203) // identified double click
-            {
-                var local_pos = PointToClient(Cursor.Position);
-                var hit_test_info = HitTest(local_pos);
-
-                if (hit_test_info.Location == TreeViewHitTestLocations.StateImage)
-                {
-                    m.Msg = 0x201; // if checkbox was clicked, turn into single click
-                }
-
-                base.WndProc(ref m);
-            }
-            else
-            {
-                base.WndProc(ref m);
-            }
         }
     }
 }
