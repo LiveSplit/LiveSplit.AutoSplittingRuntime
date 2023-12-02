@@ -7,6 +7,8 @@ edition = "2021"
 
 [target.'cfg(target_pointer_width = "64")'.dependencies]
 livesplit-auto-splitting = { git = "https://github.com/LiveSplit/livesplit-core" }
+smallstr = { version = "0.3.0", features = ["union"] }
+anyhow = "1.0.75"
 
 [lib]
 crate-type = ["cdylib"]

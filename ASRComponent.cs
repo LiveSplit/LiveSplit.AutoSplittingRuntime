@@ -100,6 +100,19 @@ namespace LiveSplit.AutoSplittingRuntime
                     {
                         settings.runtime.Step();
 
+                        try
+                        {
+                            if (
+                                settings.previousSettings == null
+                                || settings.previousUserSettings == null
+                                || settings.runtime.AreSettingsChanged(settings.previousSettings, settings.previousUserSettings)
+                            )
+                            {
+                                settings.BuildTree();
+                            }
+                        }
+                        catch { }
+
                         // Poll the tick rate and modify the update interval if it has been changed
                         double tickRate = settings.runtime.TickRate().TotalMilliseconds;
 
