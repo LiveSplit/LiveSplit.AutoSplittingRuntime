@@ -217,6 +217,21 @@ namespace LiveSplit.AutoSplittingRuntime
                                 this.settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, combo.Height + 5));
                                 break;
                             }
+                        case "fileselection":
+                            {
+                                var button = new Button
+                                {
+                                    Tag = new FileSelectionInfo(userSettings.GetKey(i), userSettings.GetFileSelectionFilter(i)),
+                                    Text = desc,
+                                    Margin = new Padding(margin, 0, 0, 0),
+                                };
+                                button.Click += new System.EventHandler(this.FileSelection_Click);
+                                button.Anchor |= AnchorStyles.Right;
+                                this.toolTip.SetToolTip(button, tooltip);
+                                this.settingsTable.Controls.Add(button, 0, this.settingsTable.RowStyles.Count);
+                                this.settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, button.Height));
+                                break;
+                            }
                         default:
                             {
                                 break;
@@ -242,6 +257,54 @@ namespace LiveSplit.AutoSplittingRuntime
             }
         }
 
+        private void FileSelection_Click(object sender, EventArgs e)
+        {
+            var button = (Button)sender;
+            if (!(button.Tag is FileSelectionInfo)) return;
+            FileSelectionInfo tag = (FileSelectionInfo)button.Tag;
+
+            string filter = "All Files (*.*)|*.*";
+            if (tag.filter != "" && tag.filter != "*" && tag.filter != "*.*" && !tag.filter.Contains("|"))
+            {
+                filter = tag.filter + "|" + tag.filter + "|" + filter;
+            }
+            var dialog = new OpenFileDialog()
+            {
+                Filter = filter
+            };
+            string old_path_win = "";
+            if (runtime != null)
+            {
+                SettingsMapRef settingsMap = runtime.GetSettingsMap();
+                if (settingsMap != null)
+                {
+                    SettingValueRef value = settingsMap.KeyGetValue(tag.key);
+                    if (value != null)
+                    {
+                        old_path_win = ASRNative.wasi_to_path(value.GetString());
+                    }
+                }
+            }
+            if (File.Exists(old_path_win))
+            {
+                dialog.InitialDirectory = Path.GetDirectoryName(old_path_win);
+                dialog.FileName = Path.GetFileName(old_path_win);
+            }
+
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                string new_path_win = dialog.FileName;
+                string new_path_wasi = ASRNative.path_to_wasi(new_path_win);
+                if (runtime != null)
+                {
+                    runtime.SettingsMapSetString(tag.key, new_path_wasi);
+                    var prev = previousSettings;
+                    previousSettings = runtime.GetSettingsMap();
+                    prev?.Dispose();
+                }
+            }
+        }
+
         class Choice
         {
             public string key;
@@ -251,6 +314,17 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 return description;
             }
+        }
+
+        readonly struct FileSelectionInfo
+        {
+            public FileSelectionInfo(string k, string f)
+            {
+                key = k;
+                filter = f;
+            }
+            public readonly string key;
+            public readonly string filter;
         }
 
         private void Checkbox_CheckedChanged(object sender, EventArgs e)

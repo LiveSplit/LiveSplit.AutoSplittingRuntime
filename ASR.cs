@@ -202,6 +202,19 @@ namespace LiveSplit.AutoSplittingRuntime
             }
             return new SettingValueRef(ASRNative.SettingsMap_get_value(this.ptr, (UIntPtr)index));
         }
+
+        public SettingValueRef KeyGetValue(string key)
+        {
+            ulong length = GetLength();
+            for (ulong i = 0; i < length; i++)
+            {
+                if (GetKey(i) == key)
+                {
+                    return GetValue(i);
+                }
+            }
+            return null;
+        }
     }
 
     public class SettingsMapRefMut : SettingsMapRef
@@ -554,6 +567,7 @@ namespace LiveSplit.AutoSplittingRuntime
                 case 1: return "bool";
                 case 2: return "title";
                 case 3: return "choice";
+                case 4: return "fileselection";
                 default: return "";
             }
         }
@@ -609,6 +623,15 @@ namespace LiveSplit.AutoSplittingRuntime
                 return "";
             }
             return ASRNative.UserSettings_get_choice_option_description(this.ptr, (UIntPtr)index, (UIntPtr)optionIndex);
+        }
+
+        public string GetFileSelectionFilter(ulong index)
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                return "";
+            }
+            return ASRNative.UserSettings_get_fileselection_filter(this.ptr, (UIntPtr)index);
         }
     }
 
@@ -756,9 +779,15 @@ namespace LiveSplit.AutoSplittingRuntime
         public static extern ASRString UserSettings_get_choice_option_key(IntPtr self, UIntPtr index, UIntPtr option_index);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
         public static extern ASRString UserSettings_get_choice_option_description(IntPtr self, UIntPtr index, UIntPtr option_index);
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern ASRString UserSettings_get_fileselection_filter(IntPtr self, UIntPtr index);
 
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
         public static extern UIntPtr get_buf_len();
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern ASRString path_to_wasi(ASRString original_path);
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern ASRString wasi_to_path(ASRString wasi_path);
     }
 
     public class ASRString : SafeHandle

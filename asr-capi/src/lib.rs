@@ -1,7 +1,7 @@
 #[cfg(target_pointer_width = "64")]
 use {
-    livesplit_auto_splitting::{time, Timer, TimerState},
-    std::{cell::RefCell, ffi::CStr, fmt},
+    livesplit_auto_splitting::{time, Timer, TimerState, wasi_path},
+    std::{cell::RefCell, ffi::CStr, fmt, path::Path},
 };
 
 mod runtime;
@@ -140,4 +140,38 @@ pub extern "C" fn get_buf_len() -> usize {
     }
     #[cfg(not(target_pointer_width = "64"))]
     0
+}
+
+/// Translates `original_path` into a path that
+/// is accessible through the WASI file system,
+/// so a Windows path of `C:\foo\bar.exe` would
+/// be returned as `/mnt/c/foo/bar.exe`.
+#[no_mangle]
+pub extern "C" fn path_to_wasi(original_path: *const u8) -> *const u8 {
+    #[cfg(target_pointer_width = "64")]
+    {
+        let wasi = unsafe {
+            wasi_path::path_to_wasi(Path::new(str(original_path))).unwrap_or_default()
+        };
+        output_str(&wasi)
+    }
+    #[cfg(not(target_pointer_width = "64"))]
+    output_str("")
+}
+
+/// Translates from a path accessible through the WAS
+/// file system to a path accessible outside that,
+/// so a WASI path of `/mnt/c/foo/bar.exe` would
+/// be translated on Windows to `C:\foo\bar.exe`.
+#[no_mangle]
+pub extern "C" fn wasi_to_path(wasi_path: *const u8) -> *const u8 {
+    #[cfg(target_pointer_width = "64")]
+    {
+        let path = unsafe {
+            wasi_path::wasi_to_path(str(wasi_path)).unwrap_or_default()
+        };
+        output_str(&path.to_str().unwrap_or_default())
+    }
+    #[cfg(not(target_pointer_width = "64"))]
+    output_str("")
 }

@@ -66,6 +66,7 @@ pub extern "C" fn UserSettings_get_type(_this: &UserSettings, _index: usize) -> 
             WidgetKind::Bool { .. } => 1,
             WidgetKind::Title { .. } => 2,
             WidgetKind::Choice { .. } => 3,
+            WidgetKind::FileSelection { .. } => 4,
         }
     }
     #[cfg(not(target_pointer_width = "64"))]
@@ -189,6 +190,23 @@ pub extern "C" fn UserSettings_get_heading_level(_this: &UserSettings, _index: u
             return 0;
         };
         heading_level
+    }
+    #[cfg(not(target_pointer_width = "64"))]
+    panic!("Index out of bounds")
+}
+
+#[no_mangle]
+pub extern "C" fn UserSettings_get_fileselection_filter(
+    _this: &UserSettings,
+    _index: usize,
+) -> *const u8 {
+    #[cfg(target_pointer_width = "64")]
+    {
+        let setting = &_this.inner[_index];
+        let WidgetKind::FileSelection { filter } = &setting.kind else {
+            return output_str("");
+        };
+        output_str(&filter)
     }
     #[cfg(not(target_pointer_width = "64"))]
     panic!("Index out of bounds")
