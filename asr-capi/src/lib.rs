@@ -1,6 +1,6 @@
 #[cfg(target_pointer_width = "64")]
 use {
-    livesplit_auto_splitting::{time, Timer, TimerState, wasi_path},
+    livesplit_auto_splitting::{time, wasi_path, Timer, TimerState},
     std::{cell::RefCell, ffi::CStr, fmt, path::Path},
 };
 
@@ -150,9 +150,8 @@ pub extern "C" fn get_buf_len() -> usize {
 pub extern "C" fn path_to_wasi(original_path: *const u8) -> *const u8 {
     #[cfg(target_pointer_width = "64")]
     {
-        let wasi = unsafe {
-            wasi_path::path_to_wasi(Path::new(str(original_path))).unwrap_or_default()
-        };
+        let wasi =
+            unsafe { wasi_path::path_to_wasi(Path::new(str(original_path))).unwrap_or_default() };
         output_str(&wasi)
     }
     #[cfg(not(target_pointer_width = "64"))]
@@ -167,9 +166,7 @@ pub extern "C" fn path_to_wasi(original_path: *const u8) -> *const u8 {
 pub extern "C" fn wasi_to_path(wasi_path: *const u8) -> *const u8 {
     #[cfg(target_pointer_width = "64")]
     {
-        let path = unsafe {
-            wasi_path::wasi_to_path(str(wasi_path)).unwrap_or_default()
-        };
+        let path = unsafe { wasi_path::wasi_to_path(str(wasi_path)).unwrap_or_default() };
         output_str(&path.to_str().unwrap_or_default())
     }
     #[cfg(not(target_pointer_width = "64"))]
