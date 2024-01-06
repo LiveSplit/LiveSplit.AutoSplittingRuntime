@@ -57,9 +57,11 @@ namespace LiveSplit.AutoSplittingRuntime
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.resetSettingToDefaultToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
+            this.settingsBox = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel.SuspendLayout();
             this.treeContextMenu.SuspendLayout();
             this.treeContextMenu2.SuspendLayout();
+            this.settingsBox.SuspendLayout();
             this.SuspendLayout();
             // 
             // tableLayoutPanel
@@ -73,13 +75,13 @@ namespace LiveSplit.AutoSplittingRuntime
             this.tableLayoutPanel.Controls.Add(this.btnSelectFile, 2, 0);
             this.tableLayoutPanel.Controls.Add(this.txtScriptPath, 1, 0);
             this.tableLayoutPanel.Controls.Add(this.flowLayoutPanel2, 1, 1);
-            this.tableLayoutPanel.Controls.Add(this.settingsTable, 0, 2);
             this.tableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel.Location = new System.Drawing.Point(7, 7);
             this.tableLayoutPanel.Name = "tableLayoutPanel";
             this.tableLayoutPanel.RowCount = 3;
             this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 29F));
             this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel.Size = new System.Drawing.Size(462, 498);
             this.tableLayoutPanel.TabIndex = 0;
@@ -125,17 +127,17 @@ namespace LiveSplit.AutoSplittingRuntime
             // 
             // settingsTable
             // 
-            this.settingsTable.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.settingsTable.AutoScroll = true;
+            this.settingsTable.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.settingsTable.ColumnCount = 1;
-            this.tableLayoutPanel.SetColumnSpan(this.settingsTable, 3);
-            this.settingsTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.settingsTable.Location = new System.Drawing.Point(3, 38);
+            this.settingsTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            this.settingsTable.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.settingsTable.Location = new System.Drawing.Point(3, 16);
             this.settingsTable.Name = "settingsTable";
+            this.settingsTable.Padding = new System.Windows.Forms.Padding(5, 0, 0, 0);
             this.settingsTable.RowCount = 1;
-            this.settingsTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 457F));
-            this.settingsTable.Size = new System.Drawing.Size(456, 457);
+            this.settingsTable.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.settingsTable.Size = new System.Drawing.Size(450, 431);
             this.settingsTable.TabIndex = 13;
             // 
             // treeContextMenu
@@ -262,10 +264,21 @@ namespace LiveSplit.AutoSplittingRuntime
             this.resetSettingToDefaultToolStripMenuItem.Size = new System.Drawing.Size(208, 22);
             this.resetSettingToDefaultToolStripMenuItem.Text = "Reset Setting to Default";
             // 
+            // settingsBox
+            // 
+            this.settingsBox.Controls.Add(this.settingsTable);
+            this.settingsBox.Location = new System.Drawing.Point(10, 52);
+            this.settingsBox.Name = "settingsBox";
+            this.settingsBox.Size = new System.Drawing.Size(456, 450);
+            this.settingsBox.TabIndex = 13;
+            this.settingsBox.TabStop = false;
+            this.settingsBox.Text = "Auto Splitter Settings";
+            // 
             // ComponentSettings
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.settingsBox);
             this.Controls.Add(this.tableLayoutPanel);
             this.Name = "ComponentSettings";
             this.Padding = new System.Windows.Forms.Padding(7);
@@ -275,6 +288,7 @@ namespace LiveSplit.AutoSplittingRuntime
             this.tableLayoutPanel.PerformLayout();
             this.treeContextMenu.ResumeLayout(false);
             this.treeContextMenu2.ResumeLayout(false);
+            this.settingsBox.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -308,5 +322,6 @@ namespace LiveSplit.AutoSplittingRuntime
         private System.Windows.Forms.ToolStripMenuItem resetSettingToDefaultToolStripMenuItem;
         private System.Windows.Forms.TableLayoutPanel settingsTable;
         private System.Windows.Forms.ToolTip toolTip;
+        private System.Windows.Forms.GroupBox settingsBox;
     }
 }

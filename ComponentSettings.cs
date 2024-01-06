@@ -138,7 +138,7 @@ namespace LiveSplit.AutoSplittingRuntime
 
                 var len = userSettings.GetLength();
 
-                var margin = 0;
+                var margin = 3;
 
                 for (ulong i = 0; i < len; i++)
                 {
@@ -170,11 +170,11 @@ namespace LiveSplit.AutoSplittingRuntime
                                 margin = 20 * headingLevel;
                                 var label = new Label
                                 {
-                                    Margin = new Padding(margin, 0, 0, 0),
+                                    Margin = new Padding(margin, 3, 0, 0),
                                     Text = desc
                                 };
                                 margin += 20;
-                                label.Font = new Font(label.Font.FontFamily, 12, FontStyle.Underline);
+                                label.Font = new Font(label.Font.FontFamily, 10, FontStyle.Underline);
                                 label.Anchor |= AnchorStyles.Right;
                                 this.toolTip.SetToolTip(label, tooltip);
                                 this.settingsTable.Controls.Add(label, 0, this.settingsTable.RowStyles.Count);
