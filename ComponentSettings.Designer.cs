@@ -272,7 +272,7 @@ namespace LiveSplit.AutoSplittingRuntime
             this.settingsBox.Size = new System.Drawing.Size(456, 450);
             this.settingsBox.TabIndex = 13;
             this.settingsBox.TabStop = false;
-            this.settingsBox.Text = "Autosplitter settings";
+            this.settingsBox.Text = "Auto Splitter Settings";
             // 
             // ComponentSettings
             // 
