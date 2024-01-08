@@ -8,7 +8,7 @@ mod runtime;
 mod setting_value;
 mod settings_list;
 mod settings_map;
-mod user_settings;
+mod widgets;
 
 #[cfg(target_pointer_width = "64")]
 thread_local! {
@@ -142,33 +142,36 @@ pub extern "C" fn get_buf_len() -> usize {
     0
 }
 
-/// Translates `original_path` into a path that
-/// is accessible through the WASI file system,
-/// so a Windows path of `C:\foo\bar.exe` would
-/// be returned as `/mnt/c/foo/bar.exe`.
+/// Translates `original_path` into a path that is accessible through the WASI
+/// file system, so a Windows path of `C:\foo\bar.exe` would be returned as
+/// `/mnt/c/foo/bar.exe`.
+///
+/// # Safety
+/// `original_path` must be a valid nul-terminated UTF-8 string.
 #[no_mangle]
-pub extern "C" fn path_to_wasi(original_path: *const u8) -> *const u8 {
+pub unsafe extern "C" fn path_to_wasi(_original_path: *const u8) -> *const u8 {
     #[cfg(target_pointer_width = "64")]
     {
-        let wasi =
-            unsafe { wasi_path::path_to_wasi(Path::new(str(original_path))).unwrap_or_default() };
+        let wasi = wasi_path::from_native(Path::new(str(_original_path))).unwrap_or_default();
         output_str(&wasi)
     }
     #[cfg(not(target_pointer_width = "64"))]
-    output_str("")
+    "\0".as_ptr()
 }
 
-/// Translates from a path accessible through the WAS
-/// file system to a path accessible outside that,
-/// so a WASI path of `/mnt/c/foo/bar.exe` would
-/// be translated on Windows to `C:\foo\bar.exe`.
+/// Translates from a path accessible through the WASI file system to a path
+/// accessible outside that, so a WASI path of `/mnt/c/foo/bar.exe` would be
+/// translated on Windows to `C:\foo\bar.exe`.
+///
+/// # Safety
+/// `wasi_path` must be a valid nul-terminated UTF-8 string.
 #[no_mangle]
-pub extern "C" fn wasi_to_path(wasi_path: *const u8) -> *const u8 {
+pub unsafe extern "C" fn wasi_to_path(_wasi_path: *const u8) -> *const u8 {
     #[cfg(target_pointer_width = "64")]
     {
-        let path = unsafe { wasi_path::wasi_to_path(str(wasi_path)).unwrap_or_default() };
-        output_str(&path.to_str().unwrap_or_default())
+        let path = wasi_path::to_native(str(_wasi_path)).unwrap_or_default();
+        output_str(path.to_str().unwrap_or_default())
     }
     #[cfg(not(target_pointer_width = "64"))]
-    output_str("")
+    "\0".as_ptr()
 }

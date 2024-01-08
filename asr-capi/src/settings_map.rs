@@ -65,3 +65,16 @@ pub extern "C" fn SettingsMap_get_value(_this: &SettingsMap, _index: usize) -> &
     #[cfg(not(target_pointer_width = "64"))]
     panic!("Index out of bounds")
 }
+
+#[no_mangle]
+pub unsafe extern "C" fn SettingsMap_get_value_by_key(
+    _this: &SettingsMap,
+    _key_ptr: *const u8,
+) -> Option<&SettingValue> {
+    #[cfg(target_pointer_width = "64")]
+    {
+        _this.get(str(_key_ptr))
+    }
+    #[cfg(not(target_pointer_width = "64"))]
+    None
+}

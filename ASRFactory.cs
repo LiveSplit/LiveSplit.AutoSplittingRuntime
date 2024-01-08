@@ -16,7 +16,7 @@ namespace LiveSplit.AutoSplittingRuntime
         public string ComponentName => "Auto Splitting Runtime";
         public string Description => "Allows auto splitters provided as WebAssembly modules to define the splitting behaviour.";
         public ComponentCategory Category => ComponentCategory.Control;
-        public Version Version => Version.Parse("0.0.7");
+        public Version Version => Version.Parse("0.0.8");
 
         public string UpdateName => ComponentName;
         public string UpdateURL => "http://livesplit.org/update/";

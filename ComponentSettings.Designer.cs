@@ -134,7 +134,7 @@ namespace LiveSplit.AutoSplittingRuntime
             this.settingsTable.Dock = System.Windows.Forms.DockStyle.Fill;
             this.settingsTable.Location = new System.Drawing.Point(3, 16);
             this.settingsTable.Name = "settingsTable";
-            this.settingsTable.Padding = new System.Windows.Forms.Padding(5, 0, 0, 0);
+            this.settingsTable.Padding = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.settingsTable.RowCount = 1;
             this.settingsTable.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.settingsTable.Size = new System.Drawing.Size(450, 431);
