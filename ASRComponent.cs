@@ -103,9 +103,9 @@ namespace LiveSplit.AutoSplittingRuntime
                         try
                         {
                             if (
-                                settings.previousSettings == null
-                                || settings.previousUserSettings == null
-                                || settings.runtime.AreSettingsChanged(settings.previousSettings, settings.previousUserSettings)
+                                settings.previousMap == null
+                                || settings.previousWidgets == null
+                                || settings.runtime.AreSettingsChanged(settings.previousMap, settings.previousWidgets)
                             )
                             {
                                 settings.BuildTree();

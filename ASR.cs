@@ -102,13 +102,13 @@ namespace LiveSplit.AutoSplittingRuntime
             return new TimeSpan((long)ASRNative.Runtime_tick_rate(this.ptr));
         }
 
-        public UserSettings GetUserSettings()
+        public Widgets GetSettingsWidgets()
         {
             if (ptr == IntPtr.Zero)
             {
                 return null;
             }
-            return new UserSettings(ASRNative.Runtime_get_user_settings(this.ptr));
+            return new Widgets(ASRNative.Runtime_get_settings_widgets(this.ptr));
         }
 
         public void SettingsMapSetBool(string key, bool value)
@@ -153,7 +153,7 @@ namespace LiveSplit.AutoSplittingRuntime
             ASRNative.Runtime_set_settings_map(this.ptr, settingsMapPtr);
         }
 
-        public bool AreSettingsChanged(SettingsMapRef previousSettingsMap, UserSettingsRef previousUserSettings)
+        public bool AreSettingsChanged(SettingsMapRef previousSettingsMap, WidgetsRef previousWidgets)
         {
             if (ptr == IntPtr.Zero)
             {
@@ -163,11 +163,11 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 return false;
             }
-            if (previousUserSettings.ptr == IntPtr.Zero)
+            if (previousWidgets.ptr == IntPtr.Zero)
             {
                 return false;
             }
-            return ASRNative.Runtime_are_settings_changed(this.ptr, previousSettingsMap.ptr, previousUserSettings.ptr) != 0;
+            return ASRNative.Runtime_are_settings_changed(this.ptr, previousSettingsMap.ptr, previousWidgets.ptr) != 0;
         }
     }
 
@@ -201,6 +201,22 @@ namespace LiveSplit.AutoSplittingRuntime
                 return null;
             }
             return new SettingValueRef(ASRNative.SettingsMap_get_value(this.ptr, (UIntPtr)index));
+        }
+        public SettingValueRef KeyGetValue(string key)
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                return null;
+            }
+            var valuePtr = ASRNative.SettingsMap_get_value_by_key(this.ptr, key);
+            if (valuePtr != IntPtr.Zero)
+            {
+                return new SettingValueRef(valuePtr);
+            }
+            else
+            {
+                return null;
+            }
         }
     }
 
@@ -489,10 +505,10 @@ namespace LiveSplit.AutoSplittingRuntime
         internal SettingValue(IntPtr ptr) : base(ptr) { }
     }
 
-    public class UserSettingsRef
+    public class WidgetsRef
     {
         internal IntPtr ptr;
-        internal UserSettingsRef(IntPtr ptr)
+        internal WidgetsRef(IntPtr ptr)
         {
             this.ptr = ptr;
         }
@@ -503,7 +519,7 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 return 0;
             }
-            return (ulong)ASRNative.UserSettings_len(this.ptr);
+            return (ulong)ASRNative.Widgets_len(this.ptr);
         }
 
         public string GetKey(ulong index)
@@ -512,7 +528,7 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 return "";
             }
-            return ASRNative.UserSettings_get_key(this.ptr, (UIntPtr)index);
+            return ASRNative.Widgets_get_key(this.ptr, (UIntPtr)index);
         }
 
         public string GetDescription(ulong index)
@@ -521,7 +537,7 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 return "";
             }
-            return ASRNative.UserSettings_get_description(this.ptr, (UIntPtr)index);
+            return ASRNative.Widgets_get_description(this.ptr, (UIntPtr)index);
         }
 
         public string GetTooltip(ulong index)
@@ -530,7 +546,7 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 return "";
             }
-            return ASRNative.UserSettings_get_tooltip(this.ptr, (UIntPtr)index);
+            return ASRNative.Widgets_get_tooltip(this.ptr, (UIntPtr)index);
         }
 
         public uint GetHeadingLevel(ulong index)
@@ -539,7 +555,7 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 return 0;
             }
-            return ASRNative.UserSettings_get_heading_level(this.ptr, (UIntPtr)index);
+            return ASRNative.Widgets_get_heading_level(this.ptr, (UIntPtr)index);
         }
 
         public string GetType(ulong index)
@@ -548,12 +564,13 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 return "";
             }
-            var ty = ASRNative.UserSettings_get_type(this.ptr, (UIntPtr)index);
+            var ty = ASRNative.Widgets_get_type(this.ptr, (UIntPtr)index);
             switch ((ulong)ty)
             {
                 case 1: return "bool";
                 case 2: return "title";
                 case 3: return "choice";
+                case 4: return "file-select";
                 default: return "";
             }
         }
@@ -568,7 +585,7 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 return false;
             }
-            return ASRNative.UserSettings_get_bool(this.ptr, (UIntPtr)index, settingsMap.ptr) != 0;
+            return ASRNative.Widgets_get_bool(this.ptr, (UIntPtr)index, settingsMap.ptr) != 0;
         }
 
         public ulong GetChoiceCurrentIndex(ulong index, SettingsMapRef settingsMap)
@@ -581,7 +598,7 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 return 0;
             }
-            return (ulong)ASRNative.UserSettings_get_choice_current_index(this.ptr, (UIntPtr)index, settingsMap.ptr);
+            return (ulong)ASRNative.Widgets_get_choice_current_index(this.ptr, (UIntPtr)index, settingsMap.ptr);
         }
 
         public ulong GetChoiceOptionsLength(ulong index)
@@ -590,7 +607,7 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 return 0;
             }
-            return (ulong)ASRNative.UserSettings_get_choice_options_len(this.ptr, (UIntPtr)index);
+            return (ulong)ASRNative.Widgets_get_choice_options_len(this.ptr, (UIntPtr)index);
         }
 
         public string GetChoiceOptionKey(ulong index, ulong optionIndex)
@@ -599,7 +616,7 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 return "";
             }
-            return ASRNative.UserSettings_get_choice_option_key(this.ptr, (UIntPtr)index, (UIntPtr)optionIndex);
+            return ASRNative.Widgets_get_choice_option_key(this.ptr, (UIntPtr)index, (UIntPtr)optionIndex);
         }
 
         public string GetChoiceOptionDescription(ulong index, ulong optionIndex)
@@ -608,26 +625,35 @@ namespace LiveSplit.AutoSplittingRuntime
             {
                 return "";
             }
-            return ASRNative.UserSettings_get_choice_option_description(this.ptr, (UIntPtr)index, (UIntPtr)optionIndex);
+            return ASRNative.Widgets_get_choice_option_description(this.ptr, (UIntPtr)index, (UIntPtr)optionIndex);
+        }
+
+        public string GetFileSelectFilter(ulong index)
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                return "";
+            }
+            return ASRNative.Widgets_get_file_select_filter(this.ptr, (UIntPtr)index);
         }
     }
 
-    public class UserSettingsRefMut : UserSettingsRef
+    public class WidgetsRefMut : WidgetsRef
     {
-        internal UserSettingsRefMut(IntPtr ptr) : base(ptr) { }
+        internal WidgetsRefMut(IntPtr ptr) : base(ptr) { }
     }
 
-    public class UserSettings : UserSettingsRefMut, IDisposable
+    public class Widgets : WidgetsRefMut, IDisposable
     {
         private void Drop()
         {
             if (ptr != IntPtr.Zero)
             {
-                ASRNative.UserSettings_drop(this.ptr);
+                ASRNative.Widgets_drop(this.ptr);
                 ptr = IntPtr.Zero;
             }
         }
-        ~UserSettings()
+        ~Widgets()
         {
             Drop();
         }
@@ -636,7 +662,7 @@ namespace LiveSplit.AutoSplittingRuntime
             Drop();
             GC.SuppressFinalize(this);
         }
-        internal UserSettings(IntPtr ptr) : base(ptr) { }
+        internal Widgets(IntPtr ptr) : base(ptr) { }
     }
 
     public delegate int StateDelegate();
@@ -667,7 +693,7 @@ namespace LiveSplit.AutoSplittingRuntime
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
         public static extern ulong Runtime_tick_rate(IntPtr self);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr Runtime_get_user_settings(IntPtr self);
+        public static extern IntPtr Runtime_get_settings_widgets(IntPtr self);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
         public static extern void Runtime_settings_map_set_bool(IntPtr self, ASRString key, byte value);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
@@ -677,7 +703,7 @@ namespace LiveSplit.AutoSplittingRuntime
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
         public static extern void Runtime_set_settings_map(IntPtr self, IntPtr settings_map);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern byte Runtime_are_settings_changed(IntPtr self, IntPtr previous_settings_map, IntPtr previous_user_settings);
+        public static extern byte Runtime_are_settings_changed(IntPtr self, IntPtr previous_settings_map, IntPtr previous_widgets);
 
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr SettingsMap_new();
@@ -691,6 +717,8 @@ namespace LiveSplit.AutoSplittingRuntime
         public static extern ASRString SettingsMap_get_key(IntPtr self, UIntPtr index);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr SettingsMap_get_value(IntPtr self, UIntPtr index);
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr SettingsMap_get_value_by_key(IntPtr self, ASRString key);
 
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr SettingsList_new();
@@ -733,32 +761,38 @@ namespace LiveSplit.AutoSplittingRuntime
         public static extern ASRString SettingValue_get_string(IntPtr self);
 
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void UserSettings_drop(IntPtr self);
+        public static extern void Widgets_drop(IntPtr self);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern UIntPtr UserSettings_len(IntPtr self);
+        public static extern UIntPtr Widgets_len(IntPtr self);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern ASRString UserSettings_get_key(IntPtr self, UIntPtr index);
+        public static extern ASRString Widgets_get_key(IntPtr self, UIntPtr index);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern ASRString UserSettings_get_description(IntPtr self, UIntPtr index);
+        public static extern ASRString Widgets_get_description(IntPtr self, UIntPtr index);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern ASRString UserSettings_get_tooltip(IntPtr self, UIntPtr index);
+        public static extern ASRString Widgets_get_tooltip(IntPtr self, UIntPtr index);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern uint UserSettings_get_heading_level(IntPtr self, UIntPtr index);
+        public static extern uint Widgets_get_heading_level(IntPtr self, UIntPtr index);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern UIntPtr UserSettings_get_type(IntPtr self, UIntPtr index);
+        public static extern UIntPtr Widgets_get_type(IntPtr self, UIntPtr index);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern byte UserSettings_get_bool(IntPtr self, UIntPtr index, IntPtr settings_map);
+        public static extern byte Widgets_get_bool(IntPtr self, UIntPtr index, IntPtr settings_map);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern UIntPtr UserSettings_get_choice_current_index(IntPtr self, UIntPtr index, IntPtr settings_map);
+        public static extern UIntPtr Widgets_get_choice_current_index(IntPtr self, UIntPtr index, IntPtr settings_map);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern UIntPtr UserSettings_get_choice_options_len(IntPtr self, UIntPtr index);
+        public static extern UIntPtr Widgets_get_choice_options_len(IntPtr self, UIntPtr index);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern ASRString UserSettings_get_choice_option_key(IntPtr self, UIntPtr index, UIntPtr option_index);
+        public static extern ASRString Widgets_get_choice_option_key(IntPtr self, UIntPtr index, UIntPtr option_index);
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-        public static extern ASRString UserSettings_get_choice_option_description(IntPtr self, UIntPtr index, UIntPtr option_index);
+        public static extern ASRString Widgets_get_choice_option_description(IntPtr self, UIntPtr index, UIntPtr option_index);
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern ASRString Widgets_get_file_select_filter(IntPtr self, UIntPtr index);
 
         [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
         public static extern UIntPtr get_buf_len();
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern ASRString path_to_wasi(ASRString original_path);
+        [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern ASRString wasi_to_path(ASRString wasi_path);
     }
 
     public class ASRString : SafeHandle
