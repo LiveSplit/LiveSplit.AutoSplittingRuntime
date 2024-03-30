@@ -316,7 +316,7 @@ namespace LiveSplit.AutoSplittingRuntime
             }
         }
 
-        readonly struct FileSelectInfo
+        struct FileSelectInfo
         {
             public FileSelectInfo(string k, string f)
             {
