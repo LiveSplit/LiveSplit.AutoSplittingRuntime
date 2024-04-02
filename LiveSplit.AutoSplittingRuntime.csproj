@@ -6,7 +6,6 @@
     <UseWindowsForms>true</UseWindowsForms>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Nullable>disable</Nullable>
   </PropertyGroup>
 
