@@ -169,7 +169,7 @@ pub unsafe extern "C" fn path_to_wasi(_original_path: *const u8) -> *const u8 {
 pub unsafe extern "C" fn wasi_to_path(_wasi_path: *const u8) -> *const u8 {
     #[cfg(target_pointer_width = "64")]
     {
-        let path = wasi_path::to_native(str(_wasi_path)).unwrap_or_default();
+        let path = wasi_path::to_native(str(_wasi_path), false).unwrap_or_default();
         output_str(path.to_str().unwrap_or_default())
     }
     #[cfg(not(target_pointer_width = "64"))]
