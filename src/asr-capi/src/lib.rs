@@ -56,6 +56,7 @@ pub struct CTimer {
     set_game_time: unsafe extern "C" fn(i64),
     pause_game_time: unsafe extern "C" fn(),
     resume_game_time: unsafe extern "C" fn(),
+    set_custom_variable: unsafe extern "C" fn(*const u8, usize, *const u8, usize),
     log: unsafe extern "C" fn(*const u8, usize),
 }
 
@@ -108,7 +109,11 @@ impl Timer for CTimer {
         unsafe { (self.resume_game_time)() }
     }
 
-    fn set_variable(&mut self, _: &str, _: &str) {}
+    fn set_variable(&mut self, name: &str, value: &str) {
+        unsafe {
+            (self.set_custom_variable)(name.as_ptr(), name.len(), value.as_ptr(), value.len())
+        }
+    }
 
     fn log_auto_splitter(&mut self, message: fmt::Arguments<'_>) {
         log(self.log, message);

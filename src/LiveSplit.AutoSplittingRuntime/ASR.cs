@@ -51,6 +51,7 @@ public class Runtime : RuntimeRefMut, IDisposable
         SetGameTimeDelegate setGameTime,
         Action pauseGameTime,
         Action resumeGameTime,
+        SetCustomVariableDelegate setCustomVariable,
         LogDelegate log
     ) : base(IntPtr.Zero)
     {
@@ -72,6 +73,7 @@ public class Runtime : RuntimeRefMut, IDisposable
             setGameTime,
             pauseGameTime,
             resumeGameTime,
+            setCustomVariable,
             log
         );
         if (ptr == IntPtr.Zero)
@@ -708,6 +710,7 @@ public class Widgets : WidgetsRefMut, IDisposable
 
 public delegate int StateDelegate();
 public delegate void SetGameTimeDelegate(long gameTime);
+public delegate void SetCustomVariableDelegate(IntPtr namePtr, UIntPtr nameLen, IntPtr valuePtr, UIntPtr valueLen);
 public delegate void LogDelegate(IntPtr messagePtr, UIntPtr messageLen);
 
 public static class ASRNative
@@ -725,6 +728,7 @@ public static class ASRNative
         SetGameTimeDelegate set_game_time,
         Action pause_game_time,
         Action resume_game_time,
+        SetCustomVariableDelegate set_custom_variable,
         LogDelegate log
     );
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
