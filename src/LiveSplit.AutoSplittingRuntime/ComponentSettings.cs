@@ -48,6 +48,7 @@ public partial class ComponentSettings : UserControl
     private readonly SetGameTimeDelegate setGameTime;
     private readonly Action pauseGameTime;
     private readonly Action resumeGameTime;
+    private readonly SetCustomVariableDelegate setCustomVariable;
 
     public ComponentSettings(TimerModel model)
     {
@@ -77,6 +78,12 @@ public partial class ComponentSettings : UserControl
         setGameTime = (ticks) => model.CurrentState.SetGameTime(new TimeSpan(ticks));
         pauseGameTime = () => model.CurrentState.IsGameTimePaused = true;
         resumeGameTime = () => model.CurrentState.IsGameTimePaused = false;
+        setCustomVariable = (namePtr, nameLen, valuePtr, valueLen) =>
+        {
+            string name = ASRString.FromPtrLen(namePtr, nameLen);
+            string value = ASRString.FromPtrLen(valuePtr, valueLen);
+            model.CurrentState.Run.Metadata.SetCustomVariable(name, value);
+        };
     }
 
     public ComponentSettings(TimerModel model, string scriptPath)
@@ -117,6 +124,7 @@ public partial class ComponentSettings : UserControl
                     setGameTime,
                     pauseGameTime,
                     resumeGameTime,
+                    setCustomVariable,
                     log
                 );
             }
