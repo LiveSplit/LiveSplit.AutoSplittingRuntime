@@ -1,6 +1,6 @@
 #[cfg(target_pointer_width = "64")]
 use {
-    livesplit_auto_splitting::{time, wasi_path, Timer, TimerState},
+    livesplit_auto_splitting::{time, wasi_path, LogLevel, Timer, TimerState},
     std::{cell::RefCell, ffi::CStr, fmt, path::Path},
 };
 
@@ -110,7 +110,11 @@ impl Timer for CTimer {
 
     fn set_variable(&mut self, _: &str, _: &str) {}
 
-    fn log(&mut self, message: fmt::Arguments<'_>) {
+    fn log_auto_splitter(&mut self, message: fmt::Arguments<'_>) {
+        log(self.log, message);
+    }
+
+    fn log_runtime(&mut self, message: fmt::Arguments<'_>, _: LogLevel) {
         log(self.log, message);
     }
 }
