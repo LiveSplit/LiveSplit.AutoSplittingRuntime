@@ -22,7 +22,7 @@ public partial class ComponentSettings : UserControl
             if (value != scriptPath)
             {
                 scriptPath = value;
-                this.ReloadRuntime(null);
+                ReloadRuntime(null);
             }
         }
     }
@@ -55,7 +55,7 @@ public partial class ComponentSettings : UserControl
 
         scriptPath = "";
 
-        this.txtScriptPath.DataBindings.Add("Text", this, "ScriptPath", false,
+        txtScriptPath.DataBindings.Add("Text", this, "ScriptPath", false,
             DataSourceUpdateMode.OnPropertyChanged);
 
         getState = () =>
@@ -83,10 +83,10 @@ public partial class ComponentSettings : UserControl
     public ComponentSettings(TimerModel model, string scriptPath)
         : this(model)
     {
-        this.ScriptPath = scriptPath;
-        this.fixedScriptPath = true;
-        this.btnSelectFile.Enabled = false;
-        this.txtScriptPath.Enabled = false;
+        ScriptPath = scriptPath;
+        fixedScriptPath = true;
+        btnSelectFile.Enabled = false;
+        txtScriptPath.Enabled = false;
     }
 
     public void ReloadRuntime(SettingsMap settingsMap)
@@ -130,9 +130,9 @@ public partial class ComponentSettings : UserControl
 
     public void BuildTree()
     {
-        this.settingsTable.Controls.Clear();
-        this.settingsTable.RowCount = 0;
-        this.settingsTable.RowStyles.Clear();
+        settingsTable.Controls.Clear();
+        settingsTable.RowCount = 0;
+        settingsTable.RowStyles.Clear();
 
         if (runtime != null)
         {
@@ -165,9 +165,9 @@ public partial class ComponentSettings : UserControl
                         };
                         checkbox.CheckedChanged += Checkbox_CheckedChanged;
                         checkbox.Anchor |= AnchorStyles.Right;
-                        this.toolTip.SetToolTip(checkbox, tooltip);
-                        this.settingsTable.Controls.Add(checkbox, 0, this.settingsTable.RowStyles.Count);
-                        this.settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, checkbox.Height));
+                        toolTip.SetToolTip(checkbox, tooltip);
+                        settingsTable.Controls.Add(checkbox, 0, settingsTable.RowStyles.Count);
+                        settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, checkbox.Height));
                         break;
                     }
                     case "title":
@@ -182,9 +182,9 @@ public partial class ComponentSettings : UserControl
                         margin += 20;
                         label.Font = new Font(label.Font.FontFamily, 10, FontStyle.Underline);
                         label.Anchor |= AnchorStyles.Right;
-                        this.toolTip.SetToolTip(label, tooltip);
-                        this.settingsTable.Controls.Add(label, 0, this.settingsTable.RowStyles.Count);
-                        this.settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, label.Height));
+                        toolTip.SetToolTip(label, tooltip);
+                        settingsTable.Controls.Add(label, 0, settingsTable.RowStyles.Count);
+                        settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, label.Height));
                         break;
                     }
                     case "choice":
@@ -195,9 +195,9 @@ public partial class ComponentSettings : UserControl
                             Margin = new Padding(margin, 0, 0, 0)
                         };
                         label.Anchor |= AnchorStyles.Right;
-                        this.toolTip.SetToolTip(label, tooltip);
-                        this.settingsTable.Controls.Add(label, 0, this.settingsTable.RowStyles.Count);
-                        this.settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, label.Height));
+                        toolTip.SetToolTip(label, tooltip);
+                        settingsTable.Controls.Add(label, 0, settingsTable.RowStyles.Count);
+                        settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, label.Height));
 
                         var combo = new ComboBox
                         {
@@ -206,7 +206,7 @@ public partial class ComponentSettings : UserControl
                             DropDownStyle = ComboBoxStyle.DropDownList
                         };
                         combo.Anchor |= AnchorStyles.Right;
-                        this.toolTip.SetToolTip(combo, tooltip);
+                        toolTip.SetToolTip(combo, tooltip);
                         var choicesLen = widgets.GetChoiceOptionsLength(i);
                         for (ulong choiceIndex = 0; choiceIndex < choicesLen; choiceIndex++)
                         {
@@ -220,8 +220,8 @@ public partial class ComponentSettings : UserControl
 
                         combo.SelectedIndex = (int)widgets.GetChoiceCurrentIndex(i, settingsMap);
                         combo.SelectedIndexChanged += Combo_SelectedIndexChanged;
-                        this.settingsTable.Controls.Add(combo, 0, this.settingsTable.RowStyles.Count);
-                        this.settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, combo.Height + 5));
+                        settingsTable.Controls.Add(combo, 0, settingsTable.RowStyles.Count);
+                        settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, combo.Height + 5));
                         break;
                     }
                     case "file-select":
@@ -234,9 +234,9 @@ public partial class ComponentSettings : UserControl
                         };
                         button.Click += FileSelect_Click;
                         button.Anchor |= AnchorStyles.Right;
-                        this.toolTip.SetToolTip(button, tooltip);
-                        this.settingsTable.Controls.Add(button, 0, this.settingsTable.RowStyles.Count);
-                        this.settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, button.Height));
+                        toolTip.SetToolTip(button, tooltip);
+                        settingsTable.Controls.Add(button, 0, settingsTable.RowStyles.Count);
+                        settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, button.Height));
                         break;
                     }
                     default:
@@ -365,7 +365,7 @@ public partial class ComponentSettings : UserControl
         XmlElement settings_node = document.CreateElement("Settings");
 
         settings_node.AppendChild(SettingsHelper.ToElement(document, "Version", "1.0"));
-        if (!this.fixedScriptPath)
+        if (!fixedScriptPath)
         {
             settings_node.AppendChild(SettingsHelper.ToElement(document, "ScriptPath", scriptPath));
         }
@@ -383,13 +383,13 @@ public partial class ComponentSettings : UserControl
         if (!element.IsEmpty)
         {
             var settingsMap = ParseCustomSettingsFromXml(element);
-            if (!this.fixedScriptPath)
+            if (!fixedScriptPath)
             {
                 var newScriptPath = SettingsHelper.ParseString(element["ScriptPath"], string.Empty);
                 if (newScriptPath != scriptPath)
                 {
                     scriptPath = newScriptPath;
-                    this.ReloadRuntime(settingsMap);
+                    ReloadRuntime(settingsMap);
                     return;
                 }
             }
@@ -646,7 +646,7 @@ public partial class ComponentSettings : UserControl
 
         if (dialog.ShowDialog() == DialogResult.OK)
         {
-            scriptPath = this.txtScriptPath.Text = dialog.FileName;
+            scriptPath = txtScriptPath.Text = dialog.FileName;
         }
     }
 

@@ -26,7 +26,7 @@ public class Runtime : RuntimeRefMut, IDisposable
     {
         if (ptr != IntPtr.Zero)
         {
-            ASRNative.Runtime_drop(this.ptr);
+            ASRNative.Runtime_drop(ptr);
             ptr = IntPtr.Zero;
         }
     }
@@ -60,7 +60,7 @@ public class Runtime : RuntimeRefMut, IDisposable
             settingsMap.ptr = IntPtr.Zero;
         }
 
-        this.ptr = ASRNative.Runtime_new(
+        ptr = ASRNative.Runtime_new(
             path,
             settingsMapPtr,
             state,
@@ -74,7 +74,7 @@ public class Runtime : RuntimeRefMut, IDisposable
             resumeGameTime,
             log
         );
-        if (this.ptr == IntPtr.Zero)
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't load the module provided.");
         }
@@ -88,7 +88,7 @@ public class Runtime : RuntimeRefMut, IDisposable
             return false;
         }
 
-        return ASRNative.Runtime_step(this.ptr);
+        return ASRNative.Runtime_step(ptr);
     }
 
     public TimeSpan TickRate()
@@ -98,7 +98,7 @@ public class Runtime : RuntimeRefMut, IDisposable
             return TimeSpan.Zero;
         }
 
-        return new TimeSpan((long)ASRNative.Runtime_tick_rate(this.ptr));
+        return new TimeSpan((long)ASRNative.Runtime_tick_rate(ptr));
     }
 
     public Widgets GetSettingsWidgets()
@@ -108,7 +108,7 @@ public class Runtime : RuntimeRefMut, IDisposable
             return null;
         }
 
-        return new Widgets(ASRNative.Runtime_get_settings_widgets(this.ptr));
+        return new Widgets(ASRNative.Runtime_get_settings_widgets(ptr));
     }
 
     public void SettingsMapSetBool(string key, bool value)
@@ -118,7 +118,7 @@ public class Runtime : RuntimeRefMut, IDisposable
             return;
         }
 
-        ASRNative.Runtime_settings_map_set_bool(this.ptr, key, value ? (byte)1 : (byte)0);
+        ASRNative.Runtime_settings_map_set_bool(ptr, key, value ? (byte)1 : (byte)0);
     }
 
     public void SettingsMapSetString(string key, string value)
@@ -128,7 +128,7 @@ public class Runtime : RuntimeRefMut, IDisposable
             return;
         }
 
-        ASRNative.Runtime_settings_map_set_string(this.ptr, key, value);
+        ASRNative.Runtime_settings_map_set_string(ptr, key, value);
     }
 
     public SettingsMap GetSettingsMap()
@@ -138,7 +138,7 @@ public class Runtime : RuntimeRefMut, IDisposable
             return null;
         }
 
-        return new SettingsMap(ASRNative.Runtime_get_settings_map(this.ptr));
+        return new SettingsMap(ASRNative.Runtime_get_settings_map(ptr));
     }
 
     public void SetSettingsMap(SettingsMap settingsMap)
@@ -155,7 +155,7 @@ public class Runtime : RuntimeRefMut, IDisposable
         }
 
         settingsMap.ptr = IntPtr.Zero;
-        ASRNative.Runtime_set_settings_map(this.ptr, settingsMapPtr);
+        ASRNative.Runtime_set_settings_map(ptr, settingsMapPtr);
     }
 
     public bool AreSettingsChanged(SettingsMapRef previousSettingsMap, WidgetsRef previousWidgets)
@@ -175,7 +175,7 @@ public class Runtime : RuntimeRefMut, IDisposable
             return false;
         }
 
-        return ASRNative.Runtime_are_settings_changed(this.ptr, previousSettingsMap.ptr, previousWidgets.ptr) != 0;
+        return ASRNative.Runtime_are_settings_changed(ptr, previousSettingsMap.ptr, previousWidgets.ptr) != 0;
     }
 }
 
@@ -193,7 +193,7 @@ public class SettingsMapRef
             return 0;
         }
 
-        return (ulong)ASRNative.SettingsMap_len(this.ptr);
+        return (ulong)ASRNative.SettingsMap_len(ptr);
     }
     public string GetKey(ulong index)
     {
@@ -202,7 +202,7 @@ public class SettingsMapRef
             return "";
         }
 
-        return ASRNative.SettingsMap_get_key(this.ptr, (UIntPtr)index);
+        return ASRNative.SettingsMap_get_key(ptr, (UIntPtr)index);
     }
     public SettingValueRef GetValue(ulong index)
     {
@@ -211,7 +211,7 @@ public class SettingsMapRef
             return null;
         }
 
-        return new SettingValueRef(ASRNative.SettingsMap_get_value(this.ptr, (UIntPtr)index));
+        return new SettingValueRef(ASRNative.SettingsMap_get_value(ptr, (UIntPtr)index));
     }
     public SettingValueRef KeyGetValue(string key)
     {
@@ -220,7 +220,7 @@ public class SettingsMapRef
             return null;
         }
 
-        var valuePtr = ASRNative.SettingsMap_get_value_by_key(this.ptr, key);
+        var valuePtr = ASRNative.SettingsMap_get_value_by_key(ptr, key);
         if (valuePtr != IntPtr.Zero)
         {
             return new SettingValueRef(valuePtr);
@@ -249,7 +249,7 @@ public class SettingsMapRefMut : SettingsMapRef
         }
 
         value.ptr = IntPtr.Zero;
-        ASRNative.SettingsMap_insert(this.ptr, key, valuePtr);
+        ASRNative.SettingsMap_insert(ptr, key, valuePtr);
     }
 }
 
@@ -259,7 +259,7 @@ public class SettingsMap : SettingsMapRefMut, IDisposable
     {
         if (ptr != IntPtr.Zero)
         {
-            ASRNative.SettingsMap_drop(this.ptr);
+            ASRNative.SettingsMap_drop(ptr);
             ptr = IntPtr.Zero;
         }
     }
@@ -274,8 +274,8 @@ public class SettingsMap : SettingsMapRefMut, IDisposable
     }
     public SettingsMap() : base(IntPtr.Zero)
     {
-        this.ptr = ASRNative.SettingsMap_new();
-        if (this.ptr == IntPtr.Zero)
+        ptr = ASRNative.SettingsMap_new();
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the settings map.");
         }
@@ -297,7 +297,7 @@ public class SettingsListRef
             return 0;
         }
 
-        return (ulong)ASRNative.SettingsList_len(this.ptr);
+        return (ulong)ASRNative.SettingsList_len(ptr);
     }
     public SettingValueRef Get(ulong index)
     {
@@ -306,7 +306,7 @@ public class SettingsListRef
             return null;
         }
 
-        return new SettingValueRef(ASRNative.SettingsList_get(this.ptr, (UIntPtr)index));
+        return new SettingValueRef(ASRNative.SettingsList_get(ptr, (UIntPtr)index));
     }
 }
 
@@ -327,7 +327,7 @@ public class SettingsListRefMut : SettingsListRef
         }
 
         value.ptr = IntPtr.Zero;
-        ASRNative.SettingsList_push(this.ptr, valuePtr);
+        ASRNative.SettingsList_push(ptr, valuePtr);
     }
 }
 
@@ -337,7 +337,7 @@ public class SettingsList : SettingsListRefMut, IDisposable
     {
         if (ptr != IntPtr.Zero)
         {
-            ASRNative.SettingsList_drop(this.ptr);
+            ASRNative.SettingsList_drop(ptr);
             ptr = IntPtr.Zero;
         }
     }
@@ -352,8 +352,8 @@ public class SettingsList : SettingsListRefMut, IDisposable
     }
     public SettingsList() : base(IntPtr.Zero)
     {
-        this.ptr = ASRNative.SettingsList_new();
-        if (this.ptr == IntPtr.Zero)
+        ptr = ASRNative.SettingsList_new();
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the settings list.");
         }
@@ -375,7 +375,7 @@ public class SettingValueRef
             return "";
         }
 
-        var ty = ASRNative.SettingValue_get_type(this.ptr);
+        var ty = ASRNative.SettingValue_get_type(ptr);
         switch ((ulong)ty)
         {
             case 1: return "map";
@@ -394,7 +394,7 @@ public class SettingValueRef
             return null;
         }
 
-        return new SettingsMapRef(ASRNative.SettingValue_get_map(this.ptr));
+        return new SettingsMapRef(ASRNative.SettingValue_get_map(ptr));
     }
     public SettingsListRef GetList()
     {
@@ -403,7 +403,7 @@ public class SettingValueRef
             return null;
         }
 
-        return new SettingsListRef(ASRNative.SettingValue_get_list(this.ptr));
+        return new SettingsListRef(ASRNative.SettingValue_get_list(ptr));
     }
     public bool GetBool()
     {
@@ -412,7 +412,7 @@ public class SettingValueRef
             return false;
         }
 
-        return ASRNative.SettingValue_get_bool(this.ptr) != 0;
+        return ASRNative.SettingValue_get_bool(ptr) != 0;
     }
     public long GetI64()
     {
@@ -421,7 +421,7 @@ public class SettingValueRef
             return 0;
         }
 
-        return ASRNative.SettingValue_get_i64(this.ptr);
+        return ASRNative.SettingValue_get_i64(ptr);
     }
     public double GetF64()
     {
@@ -430,7 +430,7 @@ public class SettingValueRef
             return 0;
         }
 
-        return ASRNative.SettingValue_get_f64(this.ptr);
+        return ASRNative.SettingValue_get_f64(ptr);
     }
     public string GetString()
     {
@@ -439,7 +439,7 @@ public class SettingValueRef
             return "";
         }
 
-        return ASRNative.SettingValue_get_string(this.ptr);
+        return ASRNative.SettingValue_get_string(ptr);
     }
 }
 
@@ -454,7 +454,7 @@ public class SettingValue : SettingValueRefMut, IDisposable
     {
         if (ptr != IntPtr.Zero)
         {
-            ASRNative.SettingValue_drop(this.ptr);
+            ASRNative.SettingValue_drop(ptr);
             ptr = IntPtr.Zero;
         }
     }
@@ -469,32 +469,32 @@ public class SettingValue : SettingValueRefMut, IDisposable
     }
     public SettingValue(bool value) : base(IntPtr.Zero)
     {
-        this.ptr = ASRNative.SettingValue_new_bool(value ? (byte)1 : (byte)0);
-        if (this.ptr == IntPtr.Zero)
+        ptr = ASRNative.SettingValue_new_bool(value ? (byte)1 : (byte)0);
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the setting value.");
         }
     }
     public SettingValue(long value) : base(IntPtr.Zero)
     {
-        this.ptr = ASRNative.SettingValue_new_i64(value);
-        if (this.ptr == IntPtr.Zero)
+        ptr = ASRNative.SettingValue_new_i64(value);
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the setting value.");
         }
     }
     public SettingValue(double value) : base(IntPtr.Zero)
     {
-        this.ptr = ASRNative.SettingValue_new_f64(value);
-        if (this.ptr == IntPtr.Zero)
+        ptr = ASRNative.SettingValue_new_f64(value);
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the setting value.");
         }
     }
     public SettingValue(string value) : base(IntPtr.Zero)
     {
-        this.ptr = ASRNative.SettingValue_new_string(value);
-        if (this.ptr == IntPtr.Zero)
+        ptr = ASRNative.SettingValue_new_string(value);
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the setting value.");
         }
@@ -508,8 +508,8 @@ public class SettingValue : SettingValueRefMut, IDisposable
         }
 
         value.ptr = IntPtr.Zero;
-        this.ptr = ASRNative.SettingValue_new_map(valuePtr);
-        if (this.ptr == IntPtr.Zero)
+        ptr = ASRNative.SettingValue_new_map(valuePtr);
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the setting value.");
         }
@@ -523,8 +523,8 @@ public class SettingValue : SettingValueRefMut, IDisposable
         }
 
         value.ptr = IntPtr.Zero;
-        this.ptr = ASRNative.SettingValue_new_list(valuePtr);
-        if (this.ptr == IntPtr.Zero)
+        ptr = ASRNative.SettingValue_new_list(valuePtr);
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the setting value.");
         }
@@ -547,7 +547,7 @@ public class WidgetsRef
             return 0;
         }
 
-        return (ulong)ASRNative.Widgets_len(this.ptr);
+        return (ulong)ASRNative.Widgets_len(ptr);
     }
 
     public string GetKey(ulong index)
@@ -557,7 +557,7 @@ public class WidgetsRef
             return "";
         }
 
-        return ASRNative.Widgets_get_key(this.ptr, (UIntPtr)index);
+        return ASRNative.Widgets_get_key(ptr, (UIntPtr)index);
     }
 
     public string GetDescription(ulong index)
@@ -567,7 +567,7 @@ public class WidgetsRef
             return "";
         }
 
-        return ASRNative.Widgets_get_description(this.ptr, (UIntPtr)index);
+        return ASRNative.Widgets_get_description(ptr, (UIntPtr)index);
     }
 
     public string GetTooltip(ulong index)
@@ -577,7 +577,7 @@ public class WidgetsRef
             return "";
         }
 
-        return ASRNative.Widgets_get_tooltip(this.ptr, (UIntPtr)index);
+        return ASRNative.Widgets_get_tooltip(ptr, (UIntPtr)index);
     }
 
     public uint GetHeadingLevel(ulong index)
@@ -587,7 +587,7 @@ public class WidgetsRef
             return 0;
         }
 
-        return ASRNative.Widgets_get_heading_level(this.ptr, (UIntPtr)index);
+        return ASRNative.Widgets_get_heading_level(ptr, (UIntPtr)index);
     }
 
     public string GetType(ulong index)
@@ -597,7 +597,7 @@ public class WidgetsRef
             return "";
         }
 
-        var ty = ASRNative.Widgets_get_type(this.ptr, (UIntPtr)index);
+        var ty = ASRNative.Widgets_get_type(ptr, (UIntPtr)index);
         switch ((ulong)ty)
         {
             case 1: return "bool";
@@ -620,7 +620,7 @@ public class WidgetsRef
             return false;
         }
 
-        return ASRNative.Widgets_get_bool(this.ptr, (UIntPtr)index, settingsMap.ptr) != 0;
+        return ASRNative.Widgets_get_bool(ptr, (UIntPtr)index, settingsMap.ptr) != 0;
     }
 
     public ulong GetChoiceCurrentIndex(ulong index, SettingsMapRef settingsMap)
@@ -635,7 +635,7 @@ public class WidgetsRef
             return 0;
         }
 
-        return (ulong)ASRNative.Widgets_get_choice_current_index(this.ptr, (UIntPtr)index, settingsMap.ptr);
+        return (ulong)ASRNative.Widgets_get_choice_current_index(ptr, (UIntPtr)index, settingsMap.ptr);
     }
 
     public ulong GetChoiceOptionsLength(ulong index)
@@ -645,7 +645,7 @@ public class WidgetsRef
             return 0;
         }
 
-        return (ulong)ASRNative.Widgets_get_choice_options_len(this.ptr, (UIntPtr)index);
+        return (ulong)ASRNative.Widgets_get_choice_options_len(ptr, (UIntPtr)index);
     }
 
     public string GetChoiceOptionKey(ulong index, ulong optionIndex)
@@ -655,7 +655,7 @@ public class WidgetsRef
             return "";
         }
 
-        return ASRNative.Widgets_get_choice_option_key(this.ptr, (UIntPtr)index, (UIntPtr)optionIndex);
+        return ASRNative.Widgets_get_choice_option_key(ptr, (UIntPtr)index, (UIntPtr)optionIndex);
     }
 
     public string GetChoiceOptionDescription(ulong index, ulong optionIndex)
@@ -665,7 +665,7 @@ public class WidgetsRef
             return "";
         }
 
-        return ASRNative.Widgets_get_choice_option_description(this.ptr, (UIntPtr)index, (UIntPtr)optionIndex);
+        return ASRNative.Widgets_get_choice_option_description(ptr, (UIntPtr)index, (UIntPtr)optionIndex);
     }
 
     public string GetFileSelectFilter(ulong index)
@@ -675,7 +675,7 @@ public class WidgetsRef
             return "";
         }
 
-        return ASRNative.Widgets_get_file_select_filter(this.ptr, (UIntPtr)index);
+        return ASRNative.Widgets_get_file_select_filter(ptr, (UIntPtr)index);
     }
 }
 
@@ -690,7 +690,7 @@ public class Widgets : WidgetsRefMut, IDisposable
     {
         if (ptr != IntPtr.Zero)
         {
-            ASRNative.Widgets_drop(this.ptr);
+            ASRNative.Widgets_drop(ptr);
             ptr = IntPtr.Zero;
         }
     }
