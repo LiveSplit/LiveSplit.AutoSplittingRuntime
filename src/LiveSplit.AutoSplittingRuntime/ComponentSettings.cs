@@ -251,12 +251,12 @@ public partial class ComponentSettings : UserControl
     private void Combo_SelectedIndexChanged(object sender, EventArgs e)
     {
         var combo = (ComboBox)sender;
-        if (!(combo.Tag is string))
+        if (combo.Tag is not string)
         {
             return;
         }
 
-        if (!(combo.SelectedItem is Choice))
+        if (combo.SelectedItem is not Choice)
         {
             return;
         }
@@ -275,7 +275,7 @@ public partial class ComponentSettings : UserControl
     private void FileSelect_Click(object sender, EventArgs e)
     {
         var button = (Button)sender;
-        if (!(button.Tag is FileSelectInfo))
+        if (button.Tag is not FileSelectInfo)
         {
             return;
         }
@@ -346,7 +346,7 @@ public partial class ComponentSettings : UserControl
     private void Checkbox_CheckedChanged(object sender, EventArgs e)
     {
         var checkbox = (CheckBox)sender;
-        if (!(checkbox.Tag is string))
+        if (checkbox.Tag is not string)
         {
             return;
         }
