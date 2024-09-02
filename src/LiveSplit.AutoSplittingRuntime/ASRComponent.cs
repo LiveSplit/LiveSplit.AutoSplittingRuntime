@@ -114,7 +114,9 @@ public class ASRComponent : LogicComponent
                     double tickRate = settings.runtime.TickRate().TotalMilliseconds;
 
                     if (updateTimer != null && tickRate != updateTimer.Interval)
+                    {
                         updateTimer.Interval = tickRate;
+                    }
                 }
             });
         }
@@ -127,8 +129,12 @@ public class ASRComponent : LogicComponent
     private void InvokeIfNeeded(Action x)
     {
         if (parentForm != null && parentForm.InvokeRequired)
+        {
             parentForm.Invoke(x);
+        }
         else
+        {
             x();
+        }
     }
 }

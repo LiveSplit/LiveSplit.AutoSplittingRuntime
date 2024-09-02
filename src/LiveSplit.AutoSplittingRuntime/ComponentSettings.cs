@@ -67,6 +67,7 @@ public partial class ComponentSettings : UserControl
                 case TimerPhase.Paused: return 2;
                 case TimerPhase.Ended: return 3;
             }
+
             return 0;
         };
         start = () => model.Start();
@@ -216,6 +217,7 @@ public partial class ComponentSettings : UserControl
                             };
                             combo.Items.Add(choice);
                         }
+
                         combo.SelectedIndex = (int)widgets.GetChoiceCurrentIndex(i, settingsMap);
                         combo.SelectedIndexChanged += Combo_SelectedIndexChanged;
                         this.settingsTable.Controls.Add(combo, 0, this.settingsTable.RowStyles.Count);
@@ -249,8 +251,16 @@ public partial class ComponentSettings : UserControl
     private void Combo_SelectedIndexChanged(object sender, EventArgs e)
     {
         var combo = (ComboBox)sender;
-        if (!(combo.Tag is string)) return;
-        if (!(combo.SelectedItem is Choice)) return;
+        if (!(combo.Tag is string))
+        {
+            return;
+        }
+
+        if (!(combo.SelectedItem is Choice))
+        {
+            return;
+        }
+
         var choice = (Choice)combo.SelectedItem;
 
         if (runtime != null)
@@ -265,7 +275,11 @@ public partial class ComponentSettings : UserControl
     private void FileSelect_Click(object sender, EventArgs e)
     {
         var button = (Button)sender;
-        if (!(button.Tag is FileSelectInfo)) return;
+        if (!(button.Tag is FileSelectInfo))
+        {
+            return;
+        }
+
         FileSelectInfo tag = (FileSelectInfo)button.Tag;
         var dialog = new OpenFileDialog()
         {
@@ -286,6 +300,7 @@ public partial class ComponentSettings : UserControl
                 }
             }
         }
+
         if (File.Exists(oldWindowsPath))
         {
             dialog.InitialDirectory = Path.GetDirectoryName(oldWindowsPath);
@@ -331,7 +346,10 @@ public partial class ComponentSettings : UserControl
     private void Checkbox_CheckedChanged(object sender, EventArgs e)
     {
         var checkbox = (CheckBox)sender;
-        if (!(checkbox.Tag is string)) return;
+        if (!(checkbox.Tag is string))
+        {
+            return;
+        }
 
         if (runtime != null)
         {
@@ -340,7 +358,6 @@ public partial class ComponentSettings : UserControl
             previousMap = runtime.GetSettingsMap();
             prev?.Dispose();
         }
-
     }
 
     public XmlNode GetSettings(XmlDocument document)
@@ -352,6 +369,7 @@ public partial class ComponentSettings : UserControl
         {
             settings_node.AppendChild(SettingsHelper.ToElement(document, "ScriptPath", scriptPath));
         }
+
         AppendCustomSettingsToXml(document, settings_node);
 
         return settings_node;
@@ -375,6 +393,7 @@ public partial class ComponentSettings : UserControl
                     return;
                 }
             }
+
             if (runtime != null)
             {
                 var prev = previousMap;
@@ -383,6 +402,7 @@ public partial class ComponentSettings : UserControl
                 runtime.SetSettingsMap(previousMap);
                 return;
             }
+
             settingsMap?.Dispose();
         }
     }
@@ -483,7 +503,6 @@ public partial class ComponentSettings : UserControl
             }
         }
 
-
         return element;
     }
 
@@ -517,7 +536,9 @@ public partial class ComponentSettings : UserControl
         foreach (XmlElement element in mapNode.ChildNodes)
         {
             if (element.Name != "Setting")
+            {
                 return null;
+            }
 
             string id = element.Attributes["id"].Value;
 
@@ -545,7 +566,9 @@ public partial class ComponentSettings : UserControl
         foreach (XmlElement element in listNode.ChildNodes)
         {
             if (element.Name != "Setting")
+            {
                 return null;
+            }
 
             var value = ParseValue(element);
             if (value == null)
@@ -590,6 +613,7 @@ public partial class ComponentSettings : UserControl
             {
                 return null;
             }
+
             return new SettingValue(value);
         }
         else if (type == "list")
@@ -599,6 +623,7 @@ public partial class ComponentSettings : UserControl
             {
                 return null;
             }
+
             return new SettingValue(value);
         }
         else
