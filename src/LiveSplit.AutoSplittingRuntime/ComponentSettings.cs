@@ -288,15 +288,13 @@ public partial class ComponentSettings : UserControl
         string oldWindowsPath = "";
         if (runtime != null)
         {
-            using (SettingsMap settingsMap = runtime.GetSettingsMap())
+            using SettingsMap settingsMap = runtime.GetSettingsMap();
+            if (settingsMap != null)
             {
-                if (settingsMap != null)
+                SettingValueRef value = settingsMap.KeyGetValue(tag.key);
+                if (value != null)
                 {
-                    SettingValueRef value = settingsMap.KeyGetValue(tag.key);
-                    if (value != null)
-                    {
-                        oldWindowsPath = ASRNative.wasi_to_path(value.GetString());
-                    }
+                    oldWindowsPath = ASRNative.wasi_to_path(value.GetString());
                 }
             }
         }
@@ -413,12 +411,10 @@ public partial class ComponentSettings : UserControl
 
         if (runtime != null)
         {
-            using (var settingsMap = runtime.GetSettingsMap())
+            using var settingsMap = runtime.GetSettingsMap();
+            if (settingsMap != null)
             {
-                if (settingsMap != null)
-                {
-                    BuildMap(document, asrParent, settingsMap);
-                }
+                BuildMap(document, asrParent, settingsMap);
             }
         }
 
