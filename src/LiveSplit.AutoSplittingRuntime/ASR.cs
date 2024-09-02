@@ -376,16 +376,16 @@ public class SettingValueRef
         }
 
         UIntPtr ty = ASRNative.SettingValue_get_type(ptr);
-        switch ((ulong)ty)
+        return (ulong)ty switch
         {
-            case 1: return "map";
-            case 2: return "list";
-            case 3: return "bool";
-            case 4: return "i64";
-            case 5: return "f64";
-            case 6: return "string";
-            default: return "";
-        }
+            1 => "map",
+            2 => "list",
+            3 => "bool",
+            4 => "i64",
+            5 => "f64",
+            6 => "string",
+            _ => "",
+        };
     }
     public SettingsMapRef GetMap()
     {
@@ -598,14 +598,14 @@ public class WidgetsRef
         }
 
         UIntPtr ty = ASRNative.Widgets_get_type(ptr, (UIntPtr)index);
-        switch ((ulong)ty)
+        return (ulong)ty switch
         {
-            case 1: return "bool";
-            case 2: return "title";
-            case 3: return "choice";
-            case 4: return "file-select";
-            default: return "";
-        }
+            1 => "bool",
+            2 => "title",
+            3 => "choice",
+            4 => "file-select",
+            _ => "",
+        };
     }
 
     public bool GetBool(ulong index, SettingsMapRef settingsMap)

@@ -60,15 +60,14 @@ public partial class ComponentSettings : UserControl
 
         getState = () =>
         {
-            switch (model.CurrentState.CurrentPhase)
+            return model.CurrentState.CurrentPhase switch
             {
-                case TimerPhase.NotRunning: return 0;
-                case TimerPhase.Running: return 1;
-                case TimerPhase.Paused: return 2;
-                case TimerPhase.Ended: return 3;
-            }
-
-            return 0;
+                TimerPhase.NotRunning => 0,
+                TimerPhase.Running => 1,
+                TimerPhase.Paused => 2,
+                TimerPhase.Ended => 3,
+                _ => 0,
+            };
         };
         start = model.Start;
         split = model.Split;
