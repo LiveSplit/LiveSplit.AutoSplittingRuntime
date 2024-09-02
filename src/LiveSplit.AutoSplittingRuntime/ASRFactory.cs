@@ -19,6 +19,13 @@ public class ASRFactory : IComponentFactory
     public string UpdateURL => "http://livesplit.org/update/";
     public string XMLURL => "http://livesplit.org/update/Components/update.LiveSplit.AutoSplittingRuntime.xml";
 
-    public IComponent Create(LiveSplitState state) => new ASRComponent(state);
-    public IComponent Create(LiveSplitState state, string script) => new ASRComponent(state, script);
+    public IComponent Create(LiveSplitState state)
+    {
+        return new ASRComponent(state);
+    }
+
+    public IComponent Create(LiveSplitState state, string script)
+    {
+        return new ASRComponent(state, script);
+    }
 }

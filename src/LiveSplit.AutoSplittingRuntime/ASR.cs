@@ -797,10 +797,7 @@ public class ASRString : SafeHandle
 
     public ASRString() : base(IntPtr.Zero, false) { }
 
-    public override bool IsInvalid
-    {
-        get { return false; }
-    }
+    public override bool IsInvalid => false;
 
     public static implicit operator ASRString(string managedString)
     {
