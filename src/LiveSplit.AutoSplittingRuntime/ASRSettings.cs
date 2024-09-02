@@ -43,9 +43,9 @@ public class ASRSettings
 
     public ASRSettings()
     {
-        Settings = new Dictionary<string, ASRSetting>();
-        OrderedSettings = new List<ASRSetting>();
-        BasicSettings = new Dictionary<string, ASRSetting>();
+        Settings = [];
+        OrderedSettings = [];
+        BasicSettings = [];
         Builder = new ASRSettingsBuilder(this);
         Reader = new ASRSettingsReader(this);
     }
