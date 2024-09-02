@@ -70,11 +70,11 @@ public partial class ComponentSettings : UserControl
 
             return 0;
         };
-        start = () => model.Start();
-        split = () => model.Split();
-        skipSplit = () => model.SkipSplit();
-        undoSplit = () => model.UndoSplit();
-        reset = () => model.Reset();
+        start = model.Start;
+        split = model.Split;
+        skipSplit = model.SkipSplit;
+        undoSplit = model.UndoSplit;
+        reset = model.Reset;
         setGameTime = (ticks) => model.CurrentState.SetGameTime(new TimeSpan(ticks));
         pauseGameTime = () => model.CurrentState.IsGameTimePaused = true;
         resumeGameTime = () => model.CurrentState.IsGameTimePaused = false;
