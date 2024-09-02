@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace LiveSplit.AutoSplittingRuntime;
@@ -41,7 +42,7 @@ public class ASRLoader
 
         string path;
 
-        if (IntPtr.Size == 8)
+        if (Unsafe.SizeOf<nint>() == 8)
         {
             path = @"Components\x64\asr_capi.dll";
         }
