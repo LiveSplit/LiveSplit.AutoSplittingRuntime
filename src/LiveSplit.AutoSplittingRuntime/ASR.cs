@@ -861,7 +861,7 @@ public class ASRString : SafeHandle
 
     public static string FromPtrLen(IntPtr ptr, UIntPtr len)
     {
-        if (ptr == IntPtr.Zero || (ulong)len > (ulong)int.MaxValue)
+        if (ptr == IntPtr.Zero || (ulong)len > int.MaxValue)
         {
             return null;
         }
