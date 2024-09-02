@@ -26,7 +26,7 @@ public partial class ComponentSettings : UserControl
             }
         }
     }
-    private bool fixedScriptPath = false;
+    private readonly bool fixedScriptPath = false;
 
     public Runtime runtime = null;
 
@@ -306,7 +306,7 @@ public partial class ComponentSettings : UserControl
         }
     }
 
-    class Choice
+    private class Choice
     {
         public string key;
         public string description;
@@ -317,7 +317,7 @@ public partial class ComponentSettings : UserControl
         }
     }
 
-    struct FileSelectInfo
+    private readonly struct FileSelectInfo
     {
         public FileSelectInfo(string k, string f)
         {

@@ -24,7 +24,7 @@ public class ASRLoader
                 FreeLibrary(handle);
         }
 
-        private void* handle;
+        private readonly void* handle;
 
     }
 

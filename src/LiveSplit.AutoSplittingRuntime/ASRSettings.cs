@@ -116,7 +116,7 @@ public class ASRSettings
 public class ASRSettingsBuilder
 {
     public string CurrentDefaultParent { get; set; }
-    private ASRSettings _s;
+    private readonly ASRSettings _s;
 
     public ASRSettingsBuilder(ASRSettings s)
     {
@@ -145,7 +145,7 @@ public class ASRSettingsBuilder
 /// </summary>
 public class ASRSettingsReader
 {
-    private ASRSettings _s;
+    private readonly ASRSettings _s;
 
     public ASRSettingsReader(ASRSettings s)
     {
