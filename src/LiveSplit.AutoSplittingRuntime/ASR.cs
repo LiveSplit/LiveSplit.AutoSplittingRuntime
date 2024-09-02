@@ -148,7 +148,7 @@ public class Runtime : RuntimeRefMut, IDisposable
             return;
         }
 
-        var settingsMapPtr = settingsMap.ptr;
+        IntPtr settingsMapPtr = settingsMap.ptr;
         if (settingsMapPtr == IntPtr.Zero)
         {
             return;
@@ -220,7 +220,7 @@ public class SettingsMapRef
             return null;
         }
 
-        var valuePtr = ASRNative.SettingsMap_get_value_by_key(ptr, key);
+        IntPtr valuePtr = ASRNative.SettingsMap_get_value_by_key(ptr, key);
         if (valuePtr != IntPtr.Zero)
         {
             return new SettingValueRef(valuePtr);
@@ -242,7 +242,7 @@ public class SettingsMapRefMut : SettingsMapRef
             return;
         }
 
-        var valuePtr = value.ptr;
+        IntPtr valuePtr = value.ptr;
         if (valuePtr == IntPtr.Zero)
         {
             return;
@@ -320,7 +320,7 @@ public class SettingsListRefMut : SettingsListRef
             return;
         }
 
-        var valuePtr = value.ptr;
+        IntPtr valuePtr = value.ptr;
         if (valuePtr == IntPtr.Zero)
         {
             return;
@@ -375,7 +375,7 @@ public class SettingValueRef
             return "";
         }
 
-        var ty = ASRNative.SettingValue_get_type(ptr);
+        UIntPtr ty = ASRNative.SettingValue_get_type(ptr);
         switch ((ulong)ty)
         {
             case 1: return "map";
@@ -501,7 +501,7 @@ public class SettingValue : SettingValueRefMut, IDisposable
     }
     public SettingValue(SettingsMap value) : base(IntPtr.Zero)
     {
-        var valuePtr = value.ptr;
+        IntPtr valuePtr = value.ptr;
         if (valuePtr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the setting value.");
@@ -516,7 +516,7 @@ public class SettingValue : SettingValueRefMut, IDisposable
     }
     public SettingValue(SettingsList value) : base(IntPtr.Zero)
     {
-        var valuePtr = value.ptr;
+        IntPtr valuePtr = value.ptr;
         if (valuePtr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the setting value.");
@@ -597,7 +597,7 @@ public class WidgetsRef
             return "";
         }
 
-        var ty = ASRNative.Widgets_get_type(ptr, (UIntPtr)index);
+        UIntPtr ty = ASRNative.Widgets_get_type(ptr, (UIntPtr)index);
         switch ((ulong)ty)
         {
             case 1: return "bool";
@@ -846,7 +846,7 @@ public class ASRString : SafeHandle
 
     public static implicit operator ASRString(string managedString)
     {
-        ASRString asrString = new ASRString();
+        var asrString = new ASRString();
 
         int len = Encoding.UTF8.GetByteCount(managedString);
         byte[] buffer = new byte[len + 1];

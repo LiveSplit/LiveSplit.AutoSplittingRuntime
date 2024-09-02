@@ -35,7 +35,7 @@ public partial class ComponentSettings : UserControl
 
     private static readonly LogDelegate log = (messagePtr, messageLen) =>
     {
-        var message = ASRString.FromPtrLen(messagePtr, messageLen);
+        string message = ASRString.FromPtrLen(messagePtr, messageLen);
         Log.Info($"[Auto Splitting Runtime] {message}");
     };
 
@@ -137,20 +137,20 @@ public partial class ComponentSettings : UserControl
         if (runtime != null)
         {
             previousWidgets?.Dispose();
-            var widgets = previousWidgets = runtime.GetSettingsWidgets();
+            Widgets widgets = previousWidgets = runtime.GetSettingsWidgets();
 
             previousMap?.Dispose();
-            var settingsMap = previousMap = runtime.GetSettingsMap();
+            SettingsMap settingsMap = previousMap = runtime.GetSettingsMap();
 
-            var len = widgets.GetLength();
+            ulong len = widgets.GetLength();
 
-            var margin = 3;
+            int margin = 3;
 
             for (ulong i = 0; i < len; i++)
             {
-                var desc = widgets.GetDescription(i);
-                var tooltip = widgets.GetTooltip(i);
-                var ty = widgets.GetType(i);
+                string desc = widgets.GetDescription(i);
+                string tooltip = widgets.GetTooltip(i);
+                string ty = widgets.GetType(i);
 
                 switch (ty)
                 {
@@ -172,7 +172,7 @@ public partial class ComponentSettings : UserControl
                     }
                     case "title":
                     {
-                        var headingLevel = (int)widgets.GetHeadingLevel(i);
+                        int headingLevel = (int)widgets.GetHeadingLevel(i);
                         margin = 20 * headingLevel;
                         var label = new Label
                         {
@@ -207,7 +207,7 @@ public partial class ComponentSettings : UserControl
                         };
                         combo.Anchor |= AnchorStyles.Right;
                         toolTip.SetToolTip(combo, tooltip);
-                        var choicesLen = widgets.GetChoiceOptionsLength(i);
+                        ulong choicesLen = widgets.GetChoiceOptionsLength(i);
                         for (ulong choiceIndex = 0; choiceIndex < choicesLen; choiceIndex++)
                         {
                             var choice = new Choice
@@ -266,7 +266,7 @@ public partial class ComponentSettings : UserControl
         if (runtime != null)
         {
             runtime.SettingsMapSetString((string)combo.Tag, choice.key);
-            var prev = previousMap;
+            SettingsMap prev = previousMap;
             previousMap = runtime.GetSettingsMap();
             prev?.Dispose();
         }
@@ -280,7 +280,7 @@ public partial class ComponentSettings : UserControl
             return;
         }
 
-        FileSelectInfo tag = (FileSelectInfo)button.Tag;
+        var tag = (FileSelectInfo)button.Tag;
         var dialog = new OpenFileDialog()
         {
             Filter = tag.filter
@@ -312,7 +312,7 @@ public partial class ComponentSettings : UserControl
             if (runtime != null)
             {
                 runtime.SettingsMapSetString(tag.key, newWasiPath);
-                var prev = previousMap;
+                SettingsMap prev = previousMap;
                 previousMap = runtime.GetSettingsMap();
                 prev?.Dispose();
             }
@@ -352,7 +352,7 @@ public partial class ComponentSettings : UserControl
         if (runtime != null)
         {
             runtime.SettingsMapSetBool((string)checkbox.Tag, checkbox.Checked);
-            var prev = previousMap;
+            SettingsMap prev = previousMap;
             previousMap = runtime.GetSettingsMap();
             prev?.Dispose();
         }
@@ -380,10 +380,10 @@ public partial class ComponentSettings : UserControl
         var element = (XmlElement)settings;
         if (!element.IsEmpty)
         {
-            var settingsMap = ParseCustomSettingsFromXml(element);
+            SettingsMap settingsMap = ParseCustomSettingsFromXml(element);
             if (!fixedScriptPath)
             {
-                var newScriptPath = SettingsHelper.ParseString(element["ScriptPath"], string.Empty);
+                string newScriptPath = SettingsHelper.ParseString(element["ScriptPath"], string.Empty);
                 if (newScriptPath != scriptPath)
                 {
                     scriptPath = newScriptPath;
@@ -394,7 +394,7 @@ public partial class ComponentSettings : UserControl
 
             if (runtime != null)
             {
-                var prev = previousMap;
+                SettingsMap prev = previousMap;
                 previousMap = settingsMap ?? new SettingsMap();
                 prev?.Dispose();
                 runtime.SetSettingsMap(previousMap);
@@ -411,7 +411,7 @@ public partial class ComponentSettings : UserControl
 
         if (runtime != null)
         {
-            using var settingsMap = runtime.GetSettingsMap();
+            using SettingsMap settingsMap = runtime.GetSettingsMap();
             if (settingsMap != null)
             {
                 BuildMap(document, asrParent, settingsMap);
@@ -423,7 +423,7 @@ public partial class ComponentSettings : UserControl
 
     private static void BuildMap(XmlDocument document, XmlElement parent, SettingsMapRef settingsMap)
     {
-        var len = settingsMap.GetLength();
+        ulong len = settingsMap.GetLength();
         for (ulong i = 0; i < len; i++)
         {
             XmlElement element = BuildValue(document, settingsMap.GetValue(i));
@@ -439,7 +439,7 @@ public partial class ComponentSettings : UserControl
 
     private static void BuildList(XmlDocument document, XmlElement parent, SettingsListRef settingsList)
     {
-        var len = settingsList.GetLength();
+        ulong len = settingsList.GetLength();
         for (ulong i = 0; i < len; i++)
         {
             XmlElement element = BuildValue(document, settingsList.Get(i));
@@ -455,7 +455,7 @@ public partial class ComponentSettings : UserControl
     {
         XmlElement element = document.CreateElement("Setting");
 
-        var type = value.GetKind();
+        string type = value.GetKind();
 
         XmlAttribute typeAttr = SettingsHelper.ToAttribute(document, "type", type);
         element.Attributes.Append(typeAttr);
@@ -489,7 +489,7 @@ public partial class ComponentSettings : UserControl
             }
             case "string":
             {
-                var attribute = SettingsHelper.ToAttribute(document, "value", value.GetString());
+                XmlAttribute attribute = SettingsHelper.ToAttribute(document, "value", value.GetString());
                 element.Attributes.Append(attribute);
                 break;
             }
@@ -543,7 +543,7 @@ public partial class ComponentSettings : UserControl
                 return null;
             }
 
-            var value = ParseValue(element);
+            SettingValue value = ParseValue(element);
             if (value == null)
             {
                 return null;
@@ -566,7 +566,7 @@ public partial class ComponentSettings : UserControl
                 return null;
             }
 
-            var value = ParseValue(element);
+            SettingValue value = ParseValue(element);
             if (value == null)
             {
                 return null;
@@ -604,7 +604,7 @@ public partial class ComponentSettings : UserControl
         }
         else if (type == "map")
         {
-            var value = ParseMap(element);
+            SettingsMap value = ParseMap(element);
             if (value == null)
             {
                 return null;
@@ -614,7 +614,7 @@ public partial class ComponentSettings : UserControl
         }
         else if (type == "list")
         {
-            var value = ParseList(element);
+            SettingsList value = ParseList(element);
             if (value == null)
             {
                 return null;
