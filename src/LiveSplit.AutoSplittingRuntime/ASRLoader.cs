@@ -42,7 +42,7 @@ public class ASRLoader
 
         string path;
 
-        if (Unsafe.SizeOf<nint>() == 8)
+        if (Unsafe.SizeOf<IntPtr>() == 8)
         {
             path = @"Components\x64\asr_capi.dll";
         }

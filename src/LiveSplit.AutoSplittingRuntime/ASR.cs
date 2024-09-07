@@ -8,8 +8,8 @@ namespace LiveSplit.AutoSplittingRuntime;
 
 public class RuntimeRef
 {
-    internal nint ptr;
-    internal RuntimeRef(nint ptr)
+    internal IntPtr ptr;
+    internal RuntimeRef(IntPtr ptr)
     {
         this.ptr = ptr;
     }
@@ -17,17 +17,17 @@ public class RuntimeRef
 
 public class RuntimeRefMut : RuntimeRef
 {
-    internal RuntimeRefMut(nint ptr) : base(ptr) { }
+    internal RuntimeRefMut(IntPtr ptr) : base(ptr) { }
 }
 
 public class Runtime : RuntimeRefMut, IDisposable
 {
     private void Drop()
     {
-        if (ptr != 0)
+        if (ptr != IntPtr.Zero)
         {
             ASRNative.Runtime_drop(ptr);
-            ptr = 0;
+            ptr = IntPtr.Zero;
         }
     }
     ~Runtime()
@@ -52,12 +52,12 @@ public class Runtime : RuntimeRefMut, IDisposable
         Action pauseGameTime,
         Action resumeGameTime,
         LogDelegate log
-    ) : base(0)
+    ) : base(IntPtr.Zero)
     {
-        nint settingsMapPtr = settingsMap?.ptr ?? 0;
+        IntPtr settingsMapPtr = settingsMap?.ptr ?? IntPtr.Zero;
         if (settingsMap != null)
         {
-            settingsMap.ptr = 0;
+            settingsMap.ptr = IntPtr.Zero;
         }
 
         ptr = ASRNative.Runtime_new(
@@ -74,16 +74,16 @@ public class Runtime : RuntimeRefMut, IDisposable
             resumeGameTime,
             log
         );
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't load the module provided.");
         }
     }
-    internal Runtime(nint ptr) : base(ptr) { }
+    internal Runtime(IntPtr ptr) : base(ptr) { }
 
     public bool Step()
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return false;
         }
@@ -93,7 +93,7 @@ public class Runtime : RuntimeRefMut, IDisposable
 
     public TimeSpan TickRate()
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return TimeSpan.Zero;
         }
@@ -103,7 +103,7 @@ public class Runtime : RuntimeRefMut, IDisposable
 
     public Widgets GetSettingsWidgets()
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return null;
         }
@@ -113,7 +113,7 @@ public class Runtime : RuntimeRefMut, IDisposable
 
     public void SettingsMapSetBool(string key, bool value)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return;
         }
@@ -123,7 +123,7 @@ public class Runtime : RuntimeRefMut, IDisposable
 
     public void SettingsMapSetString(string key, string value)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return;
         }
@@ -133,7 +133,7 @@ public class Runtime : RuntimeRefMut, IDisposable
 
     public SettingsMap GetSettingsMap()
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return null;
         }
@@ -143,34 +143,34 @@ public class Runtime : RuntimeRefMut, IDisposable
 
     public void SetSettingsMap(SettingsMap settingsMap)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return;
         }
 
-        nint settingsMapPtr = settingsMap.ptr;
-        if (settingsMapPtr == 0)
+        IntPtr settingsMapPtr = settingsMap.ptr;
+        if (settingsMapPtr == IntPtr.Zero)
         {
             return;
         }
 
-        settingsMap.ptr = 0;
+        settingsMap.ptr = IntPtr.Zero;
         ASRNative.Runtime_set_settings_map(ptr, settingsMapPtr);
     }
 
     public bool AreSettingsChanged(SettingsMapRef previousSettingsMap, WidgetsRef previousWidgets)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return false;
         }
 
-        if (previousSettingsMap.ptr == 0)
+        if (previousSettingsMap.ptr == IntPtr.Zero)
         {
             return false;
         }
 
-        if (previousWidgets.ptr == 0)
+        if (previousWidgets.ptr == IntPtr.Zero)
         {
             return false;
         }
@@ -181,47 +181,47 @@ public class Runtime : RuntimeRefMut, IDisposable
 
 public class SettingsMapRef
 {
-    internal nint ptr;
-    internal SettingsMapRef(nint ptr)
+    internal IntPtr ptr;
+    internal SettingsMapRef(IntPtr ptr)
     {
         this.ptr = ptr;
     }
     public ulong GetLength()
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return 0;
         }
 
-        return ASRNative.SettingsMap_len(ptr);
+        return (ulong)ASRNative.SettingsMap_len(ptr);
     }
     public string GetKey(ulong index)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return "";
         }
 
-        return ASRNative.SettingsMap_get_key(ptr, (nuint)index);
+        return ASRNative.SettingsMap_get_key(ptr, (UIntPtr)index);
     }
     public SettingValueRef GetValue(ulong index)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return null;
         }
 
-        return new SettingValueRef(ASRNative.SettingsMap_get_value(ptr, (nuint)index));
+        return new SettingValueRef(ASRNative.SettingsMap_get_value(ptr, (UIntPtr)index));
     }
     public SettingValueRef KeyGetValue(string key)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return null;
         }
 
-        nint valuePtr = ASRNative.SettingsMap_get_value_by_key(ptr, key);
-        if (valuePtr != 0)
+        IntPtr valuePtr = ASRNative.SettingsMap_get_value_by_key(ptr, key);
+        if (valuePtr != IntPtr.Zero)
         {
             return new SettingValueRef(valuePtr);
         }
@@ -234,21 +234,21 @@ public class SettingsMapRef
 
 public class SettingsMapRefMut : SettingsMapRef
 {
-    internal SettingsMapRefMut(nint ptr) : base(ptr) { }
+    internal SettingsMapRefMut(IntPtr ptr) : base(ptr) { }
     public void Insert(string key, SettingValue value)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return;
         }
 
-        nint valuePtr = value.ptr;
-        if (valuePtr == 0)
+        IntPtr valuePtr = value.ptr;
+        if (valuePtr == IntPtr.Zero)
         {
             return;
         }
 
-        value.ptr = 0;
+        value.ptr = IntPtr.Zero;
         ASRNative.SettingsMap_insert(ptr, key, valuePtr);
     }
 }
@@ -257,10 +257,10 @@ public class SettingsMap : SettingsMapRefMut, IDisposable
 {
     private void Drop()
     {
-        if (ptr != 0)
+        if (ptr != IntPtr.Zero)
         {
             ASRNative.SettingsMap_drop(ptr);
-            ptr = 0;
+            ptr = IntPtr.Zero;
         }
     }
     ~SettingsMap()
@@ -272,61 +272,61 @@ public class SettingsMap : SettingsMapRefMut, IDisposable
         Drop();
         GC.SuppressFinalize(this);
     }
-    public SettingsMap() : base(0)
+    public SettingsMap() : base(IntPtr.Zero)
     {
         ptr = ASRNative.SettingsMap_new();
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the settings map.");
         }
     }
-    internal SettingsMap(nint ptr) : base(ptr) { }
+    internal SettingsMap(IntPtr ptr) : base(ptr) { }
 }
 
 public class SettingsListRef
 {
-    internal nint ptr;
-    internal SettingsListRef(nint ptr)
+    internal IntPtr ptr;
+    internal SettingsListRef(IntPtr ptr)
     {
         this.ptr = ptr;
     }
     public ulong GetLength()
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return 0;
         }
 
-        return ASRNative.SettingsList_len(ptr);
+        return (ulong)ASRNative.SettingsList_len(ptr);
     }
     public SettingValueRef Get(ulong index)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return null;
         }
 
-        return new SettingValueRef(ASRNative.SettingsList_get(ptr, (nuint)index));
+        return new SettingValueRef(ASRNative.SettingsList_get(ptr, (UIntPtr)index));
     }
 }
 
 public class SettingsListRefMut : SettingsListRef
 {
-    internal SettingsListRefMut(nint ptr) : base(ptr) { }
+    internal SettingsListRefMut(IntPtr ptr) : base(ptr) { }
     public void Push(SettingValue value)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return;
         }
 
-        nint valuePtr = value.ptr;
-        if (valuePtr == 0)
+        IntPtr valuePtr = value.ptr;
+        if (valuePtr == IntPtr.Zero)
         {
             return;
         }
 
-        value.ptr = 0;
+        value.ptr = IntPtr.Zero;
         ASRNative.SettingsList_push(ptr, valuePtr);
     }
 }
@@ -335,10 +335,10 @@ public class SettingsList : SettingsListRefMut, IDisposable
 {
     private void Drop()
     {
-        if (ptr != 0)
+        if (ptr != IntPtr.Zero)
         {
             ASRNative.SettingsList_drop(ptr);
-            ptr = 0;
+            ptr = IntPtr.Zero;
         }
     }
     ~SettingsList()
@@ -350,32 +350,32 @@ public class SettingsList : SettingsListRefMut, IDisposable
         Drop();
         GC.SuppressFinalize(this);
     }
-    public SettingsList() : base(0)
+    public SettingsList() : base(IntPtr.Zero)
     {
         ptr = ASRNative.SettingsList_new();
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the settings list.");
         }
     }
-    internal SettingsList(nint ptr) : base(ptr) { }
+    internal SettingsList(IntPtr ptr) : base(ptr) { }
 }
 
 public class SettingValueRef
 {
-    internal nint ptr;
-    internal SettingValueRef(nint ptr)
+    internal IntPtr ptr;
+    internal SettingValueRef(IntPtr ptr)
     {
         this.ptr = ptr;
     }
     public string GetKind()
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return "";
         }
 
-        nuint ty = ASRNative.SettingValue_get_type(ptr);
+        UIntPtr ty = ASRNative.SettingValue_get_type(ptr);
         return (ulong)ty switch
         {
             1 => "map",
@@ -389,7 +389,7 @@ public class SettingValueRef
     }
     public SettingsMapRef GetMap()
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return null;
         }
@@ -398,7 +398,7 @@ public class SettingValueRef
     }
     public SettingsListRef GetList()
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return null;
         }
@@ -407,7 +407,7 @@ public class SettingValueRef
     }
     public bool GetBool()
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return false;
         }
@@ -416,7 +416,7 @@ public class SettingValueRef
     }
     public long GetI64()
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return 0;
         }
@@ -425,7 +425,7 @@ public class SettingValueRef
     }
     public double GetF64()
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return 0;
         }
@@ -434,7 +434,7 @@ public class SettingValueRef
     }
     public string GetString()
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return "";
         }
@@ -445,17 +445,17 @@ public class SettingValueRef
 
 public class SettingValueRefMut : SettingValueRef
 {
-    internal SettingValueRefMut(nint ptr) : base(ptr) { }
+    internal SettingValueRefMut(IntPtr ptr) : base(ptr) { }
 }
 
 public class SettingValue : SettingValueRefMut, IDisposable
 {
     private void Drop()
     {
-        if (ptr != 0)
+        if (ptr != IntPtr.Zero)
         {
             ASRNative.SettingValue_drop(ptr);
-            ptr = 0;
+            ptr = IntPtr.Zero;
         }
     }
     ~SettingValue()
@@ -467,137 +467,137 @@ public class SettingValue : SettingValueRefMut, IDisposable
         Drop();
         GC.SuppressFinalize(this);
     }
-    public SettingValue(bool value) : base(0)
+    public SettingValue(bool value) : base(IntPtr.Zero)
     {
         ptr = ASRNative.SettingValue_new_bool(value ? (byte)1 : (byte)0);
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the setting value.");
         }
     }
-    public SettingValue(long value) : base(0)
+    public SettingValue(long value) : base(IntPtr.Zero)
     {
         ptr = ASRNative.SettingValue_new_i64(value);
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the setting value.");
         }
     }
-    public SettingValue(double value) : base(0)
+    public SettingValue(double value) : base(IntPtr.Zero)
     {
         ptr = ASRNative.SettingValue_new_f64(value);
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the setting value.");
         }
     }
-    public SettingValue(string value) : base(0)
+    public SettingValue(string value) : base(IntPtr.Zero)
     {
         ptr = ASRNative.SettingValue_new_string(value);
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the setting value.");
         }
     }
-    public SettingValue(SettingsMap value) : base(0)
+    public SettingValue(SettingsMap value) : base(IntPtr.Zero)
     {
-        nint valuePtr = value.ptr;
-        if (valuePtr == 0)
+        IntPtr valuePtr = value.ptr;
+        if (valuePtr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the setting value.");
         }
 
-        value.ptr = 0;
+        value.ptr = IntPtr.Zero;
         ptr = ASRNative.SettingValue_new_map(valuePtr);
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the setting value.");
         }
     }
-    public SettingValue(SettingsList value) : base(0)
+    public SettingValue(SettingsList value) : base(IntPtr.Zero)
     {
-        nint valuePtr = value.ptr;
-        if (valuePtr == 0)
+        IntPtr valuePtr = value.ptr;
+        if (valuePtr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the setting value.");
         }
 
-        value.ptr = 0;
+        value.ptr = IntPtr.Zero;
         ptr = ASRNative.SettingValue_new_list(valuePtr);
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             throw new ArgumentException("Couldn't create the setting value.");
         }
     }
-    internal SettingValue(nint ptr) : base(ptr) { }
+    internal SettingValue(IntPtr ptr) : base(ptr) { }
 }
 
 public class WidgetsRef
 {
-    internal nint ptr;
-    internal WidgetsRef(nint ptr)
+    internal IntPtr ptr;
+    internal WidgetsRef(IntPtr ptr)
     {
         this.ptr = ptr;
     }
 
     public ulong GetLength()
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return 0;
         }
 
-        return ASRNative.Widgets_len(ptr);
+        return (ulong)ASRNative.Widgets_len(ptr);
     }
 
     public string GetKey(ulong index)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return "";
         }
 
-        return ASRNative.Widgets_get_key(ptr, (nuint)index);
+        return ASRNative.Widgets_get_key(ptr, (UIntPtr)index);
     }
 
     public string GetDescription(ulong index)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return "";
         }
 
-        return ASRNative.Widgets_get_description(ptr, (nuint)index);
+        return ASRNative.Widgets_get_description(ptr, (UIntPtr)index);
     }
 
     public string GetTooltip(ulong index)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return "";
         }
 
-        return ASRNative.Widgets_get_tooltip(ptr, (nuint)index);
+        return ASRNative.Widgets_get_tooltip(ptr, (UIntPtr)index);
     }
 
     public uint GetHeadingLevel(ulong index)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return 0;
         }
 
-        return ASRNative.Widgets_get_heading_level(ptr, (nuint)index);
+        return ASRNative.Widgets_get_heading_level(ptr, (UIntPtr)index);
     }
 
     public string GetType(ulong index)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return "";
         }
 
-        nuint ty = ASRNative.Widgets_get_type(ptr, (nuint)index);
+        UIntPtr ty = ASRNative.Widgets_get_type(ptr, (UIntPtr)index);
         return (ulong)ty switch
         {
             1 => "bool",
@@ -610,88 +610,88 @@ public class WidgetsRef
 
     public bool GetBool(ulong index, SettingsMapRef settingsMap)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return false;
         }
 
-        if (settingsMap.ptr == 0)
+        if (settingsMap.ptr == IntPtr.Zero)
         {
             return false;
         }
 
-        return ASRNative.Widgets_get_bool(ptr, (nuint)index, settingsMap.ptr) != 0;
+        return ASRNative.Widgets_get_bool(ptr, (UIntPtr)index, settingsMap.ptr) != 0;
     }
 
     public ulong GetChoiceCurrentIndex(ulong index, SettingsMapRef settingsMap)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return 0;
         }
 
-        if (settingsMap.ptr == 0)
+        if (settingsMap.ptr == IntPtr.Zero)
         {
             return 0;
         }
 
-        return ASRNative.Widgets_get_choice_current_index(ptr, (nuint)index, settingsMap.ptr);
+        return (ulong)ASRNative.Widgets_get_choice_current_index(ptr, (UIntPtr)index, settingsMap.ptr);
     }
 
     public ulong GetChoiceOptionsLength(ulong index)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return 0;
         }
 
-        return ASRNative.Widgets_get_choice_options_len(ptr, (nuint)index);
+        return (ulong)ASRNative.Widgets_get_choice_options_len(ptr, (UIntPtr)index);
     }
 
     public string GetChoiceOptionKey(ulong index, ulong optionIndex)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return "";
         }
 
-        return ASRNative.Widgets_get_choice_option_key(ptr, (nuint)index, (nuint)optionIndex);
+        return ASRNative.Widgets_get_choice_option_key(ptr, (UIntPtr)index, (UIntPtr)optionIndex);
     }
 
     public string GetChoiceOptionDescription(ulong index, ulong optionIndex)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return "";
         }
 
-        return ASRNative.Widgets_get_choice_option_description(ptr, (nuint)index, (nuint)optionIndex);
+        return ASRNative.Widgets_get_choice_option_description(ptr, (UIntPtr)index, (UIntPtr)optionIndex);
     }
 
     public string GetFileSelectFilter(ulong index)
     {
-        if (ptr == 0)
+        if (ptr == IntPtr.Zero)
         {
             return "";
         }
 
-        return ASRNative.Widgets_get_file_select_filter(ptr, (nuint)index);
+        return ASRNative.Widgets_get_file_select_filter(ptr, (UIntPtr)index);
     }
 }
 
 public class WidgetsRefMut : WidgetsRef
 {
-    internal WidgetsRefMut(nint ptr) : base(ptr) { }
+    internal WidgetsRefMut(IntPtr ptr) : base(ptr) { }
 }
 
 public class Widgets : WidgetsRefMut, IDisposable
 {
     private void Drop()
     {
-        if (ptr != 0)
+        if (ptr != IntPtr.Zero)
         {
             ASRNative.Widgets_drop(ptr);
-            ptr = 0;
+            ptr = IntPtr.Zero;
         }
     }
     ~Widgets()
@@ -703,19 +703,19 @@ public class Widgets : WidgetsRefMut, IDisposable
         Drop();
         GC.SuppressFinalize(this);
     }
-    internal Widgets(nint ptr) : base(ptr) { }
+    internal Widgets(IntPtr ptr) : base(ptr) { }
 }
 
 public delegate int StateDelegate();
 public delegate void SetGameTimeDelegate(long gameTime);
-public delegate void LogDelegate(nint messagePtr, nuint messageLen);
+public delegate void LogDelegate(IntPtr messagePtr, UIntPtr messageLen);
 
 public static class ASRNative
 {
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nint Runtime_new(
+    public static extern IntPtr Runtime_new(
         ASRString path,
-        nint settings_map,
+        IntPtr settings_map,
         StateDelegate state,
         Action start,
         Action split,
@@ -728,108 +728,108 @@ public static class ASRNative
         LogDelegate log
     );
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Runtime_drop(nint self);
+    public static extern void Runtime_drop(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern bool Runtime_step(nint self);
+    public static extern bool Runtime_step(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern ulong Runtime_tick_rate(nint self);
+    public static extern ulong Runtime_tick_rate(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nint Runtime_get_settings_widgets(nint self);
+    public static extern IntPtr Runtime_get_settings_widgets(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Runtime_settings_map_set_bool(nint self, ASRString key, byte value);
+    public static extern void Runtime_settings_map_set_bool(IntPtr self, ASRString key, byte value);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Runtime_settings_map_set_string(nint self, ASRString key, ASRString value);
+    public static extern void Runtime_settings_map_set_string(IntPtr self, ASRString key, ASRString value);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nint Runtime_get_settings_map(nint self);
+    public static extern IntPtr Runtime_get_settings_map(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Runtime_set_settings_map(nint self, nint settings_map);
+    public static extern void Runtime_set_settings_map(IntPtr self, IntPtr settings_map);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern byte Runtime_are_settings_changed(nint self, nint previous_settings_map, nint previous_widgets);
+    public static extern byte Runtime_are_settings_changed(IntPtr self, IntPtr previous_settings_map, IntPtr previous_widgets);
 
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nint SettingsMap_new();
+    public static extern IntPtr SettingsMap_new();
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SettingsMap_drop(nint self);
+    public static extern void SettingsMap_drop(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SettingsMap_insert(nint self, ASRString key, nint value);
+    public static extern void SettingsMap_insert(IntPtr self, ASRString key, IntPtr value);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nuint SettingsMap_len(nint self);
+    public static extern UIntPtr SettingsMap_len(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern ASRString SettingsMap_get_key(nint self, nuint index);
+    public static extern ASRString SettingsMap_get_key(IntPtr self, UIntPtr index);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nint SettingsMap_get_value(nint self, nuint index);
+    public static extern IntPtr SettingsMap_get_value(IntPtr self, UIntPtr index);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nint SettingsMap_get_value_by_key(nint self, ASRString key);
+    public static extern IntPtr SettingsMap_get_value_by_key(IntPtr self, ASRString key);
 
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nint SettingsList_new();
+    public static extern IntPtr SettingsList_new();
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SettingsList_drop(nint self);
+    public static extern void SettingsList_drop(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SettingsList_push(nint self, nint value);
+    public static extern void SettingsList_push(IntPtr self, IntPtr value);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nuint SettingsList_len(nint self);
+    public static extern UIntPtr SettingsList_len(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nint SettingsList_get(nint self, nuint index);
+    public static extern IntPtr SettingsList_get(IntPtr self, UIntPtr index);
 
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nint SettingValue_new_map(nint value);
+    public static extern IntPtr SettingValue_new_map(IntPtr value);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nint SettingValue_new_list(nint value);
+    public static extern IntPtr SettingValue_new_list(IntPtr value);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nint SettingValue_new_bool(byte value);
+    public static extern IntPtr SettingValue_new_bool(byte value);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nint SettingValue_new_i64(long value);
+    public static extern IntPtr SettingValue_new_i64(long value);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nint SettingValue_new_f64(double value);
+    public static extern IntPtr SettingValue_new_f64(double value);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nint SettingValue_new_string(ASRString value);
+    public static extern IntPtr SettingValue_new_string(ASRString value);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void SettingValue_drop(nint self);
+    public static extern void SettingValue_drop(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nuint SettingValue_get_type(nint self);
+    public static extern UIntPtr SettingValue_get_type(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nint SettingValue_get_map(nint self);
+    public static extern IntPtr SettingValue_get_map(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nint SettingValue_get_list(nint self);
+    public static extern IntPtr SettingValue_get_list(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern byte SettingValue_get_bool(nint self);
+    public static extern byte SettingValue_get_bool(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern long SettingValue_get_i64(nint self);
+    public static extern long SettingValue_get_i64(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern double SettingValue_get_f64(nint self);
+    public static extern double SettingValue_get_f64(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern ASRString SettingValue_get_string(nint self);
+    public static extern ASRString SettingValue_get_string(IntPtr self);
 
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void Widgets_drop(nint self);
+    public static extern void Widgets_drop(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nuint Widgets_len(nint self);
+    public static extern UIntPtr Widgets_len(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern ASRString Widgets_get_key(nint self, nuint index);
+    public static extern ASRString Widgets_get_key(IntPtr self, UIntPtr index);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern ASRString Widgets_get_description(nint self, nuint index);
+    public static extern ASRString Widgets_get_description(IntPtr self, UIntPtr index);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern ASRString Widgets_get_tooltip(nint self, nuint index);
+    public static extern ASRString Widgets_get_tooltip(IntPtr self, UIntPtr index);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern uint Widgets_get_heading_level(nint self, nuint index);
+    public static extern uint Widgets_get_heading_level(IntPtr self, UIntPtr index);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nuint Widgets_get_type(nint self, nuint index);
+    public static extern UIntPtr Widgets_get_type(IntPtr self, UIntPtr index);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern byte Widgets_get_bool(nint self, nuint index, nint settings_map);
+    public static extern byte Widgets_get_bool(IntPtr self, UIntPtr index, IntPtr settings_map);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nuint Widgets_get_choice_current_index(nint self, nuint index, nint settings_map);
+    public static extern UIntPtr Widgets_get_choice_current_index(IntPtr self, UIntPtr index, IntPtr settings_map);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nuint Widgets_get_choice_options_len(nint self, nuint index);
+    public static extern UIntPtr Widgets_get_choice_options_len(IntPtr self, UIntPtr index);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern ASRString Widgets_get_choice_option_key(nint self, nuint index, nuint option_index);
+    public static extern ASRString Widgets_get_choice_option_key(IntPtr self, UIntPtr index, UIntPtr option_index);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern ASRString Widgets_get_choice_option_description(nint self, nuint index, nuint option_index);
+    public static extern ASRString Widgets_get_choice_option_description(IntPtr self, UIntPtr index, UIntPtr option_index);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern ASRString Widgets_get_file_select_filter(nint self, nuint index);
+    public static extern ASRString Widgets_get_file_select_filter(IntPtr self, UIntPtr index);
 
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
-    public static extern nuint get_buf_len();
+    public static extern UIntPtr get_buf_len();
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
     public static extern ASRString path_to_wasi(ASRString original_path);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
@@ -840,7 +840,7 @@ public class ASRString : SafeHandle
 {
     private bool needToFree;
 
-    public ASRString() : base((nint)0, false) { }
+    public ASRString() : base((IntPtr)0, false) { }
 
     public override bool IsInvalid => false;
 
@@ -851,7 +851,7 @@ public class ASRString : SafeHandle
         int len = Encoding.UTF8.GetByteCount(managedString);
         byte[] buffer = new byte[len + 1];
         Encoding.UTF8.GetBytes(managedString, 0, managedString.Length, buffer, 0);
-        nint nativeUtf8 = Marshal.AllocHGlobal(buffer.Length);
+        IntPtr nativeUtf8 = Marshal.AllocHGlobal(buffer.Length);
         Marshal.Copy(buffer, 0, nativeUtf8, buffer.Length);
 
         asrString.SetHandle(nativeUtf8);
@@ -859,9 +859,9 @@ public class ASRString : SafeHandle
         return asrString;
     }
 
-    public static string FromPtrLen(nint ptr, nuint len)
+    public static string FromPtrLen(IntPtr ptr, UIntPtr len)
     {
-        if (ptr == 0 || (ulong)len > int.MaxValue)
+        if (ptr == IntPtr.Zero || (ulong)len > int.MaxValue)
         {
             return null;
         }
