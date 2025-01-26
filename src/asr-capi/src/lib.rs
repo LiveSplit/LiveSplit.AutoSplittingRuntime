@@ -1,6 +1,6 @@
 #[cfg(target_pointer_width = "64")]
 use {
-    livesplit_auto_splitting::{time, wasi_path, Timer, TimerState},
+    livesplit_auto_splitting::{time, wasi_path, LogLevel, Timer, TimerState},
     std::{cell::RefCell, ffi::CStr, fmt, path::Path},
 };
 
@@ -110,7 +110,11 @@ impl Timer for CTimer {
 
     fn set_variable(&mut self, _: &str, _: &str) {}
 
-    fn log(&mut self, message: fmt::Arguments<'_>) {
+    fn log_auto_splitter(&mut self, message: fmt::Arguments<'_>) {
+        log(self.log, message);
+    }
+
+    fn log_runtime(&mut self, message: fmt::Arguments<'_>, _: LogLevel) {
         log(self.log, message);
     }
 }
@@ -169,7 +173,7 @@ pub unsafe extern "C" fn path_to_wasi(_original_path: *const u8) -> *const u8 {
 pub unsafe extern "C" fn wasi_to_path(_wasi_path: *const u8) -> *const u8 {
     #[cfg(target_pointer_width = "64")]
     {
-        let path = wasi_path::to_native(str(_wasi_path)).unwrap_or_default();
+        let path = wasi_path::to_native(str(_wasi_path), true).unwrap_or_default();
         output_str(path.to_str().unwrap_or_default())
     }
     #[cfg(not(target_pointer_width = "64"))]
