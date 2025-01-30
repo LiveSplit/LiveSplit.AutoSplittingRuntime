@@ -184,10 +184,9 @@ public partial class ComponentSettings : UserControl
                         var label = new Label
                         {
                             Margin = new Padding(margin, 3, 0, 0),
-                            Text = desc
+                            Text = $"—  {desc}"
                         };
                         margin += 20;
-                        label.Font = new Font(label.Font.FontFamily, 10, FontStyle.Underline);
                         label.Anchor |= AnchorStyles.Right;
                         toolTip.SetToolTip(label, tooltip);
                         settingsTable.Controls.Add(label, 0, settingsTable.RowStyles.Count);
