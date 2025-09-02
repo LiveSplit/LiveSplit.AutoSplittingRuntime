@@ -48,6 +48,8 @@ unsafe fn str(s: *const u8) -> &'static str {
 #[cfg(target_pointer_width = "64")]
 pub struct CTimer {
     state: unsafe extern "C" fn() -> i32,
+    index: unsafe extern "C" fn() -> i32,
+    segment_splitted: unsafe extern "C" fn(i32) -> i32,
     start: unsafe extern "C" fn(),
     split: unsafe extern "C" fn(),
     skip_split: unsafe extern "C" fn(),
@@ -68,6 +70,23 @@ impl Timer for CTimer {
             2 => TimerState::Paused,
             3 => TimerState::Ended,
             _ => TimerState::NotRunning,
+        }
+    }
+
+    fn current_split_index(&self) -> Option<usize> {
+        let i = unsafe { (self.index)() };
+        if i >= 0 {
+            Some(i as usize)
+        } else {
+            None
+        }
+    }
+
+    fn segment_splitted(&self, idx: usize) -> Option<bool> {
+        match unsafe { (self.segment_splitted)(i32::try_from(idx).ok()?) } {
+            1 => Some(true),
+            0 => Some(false),
+            _ => None,
         }
     }
 
