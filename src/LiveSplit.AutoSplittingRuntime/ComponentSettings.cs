@@ -40,6 +40,8 @@ public partial class ComponentSettings : UserControl
     };
 
     private readonly StateDelegate getState;
+    private readonly IndexDelegate getIndex;
+    private readonly SegmentSplittedDelegate segmentSplitted;
     private readonly Action start;
     private readonly Action split;
     private readonly Action skipSplit;
@@ -69,6 +71,16 @@ public partial class ComponentSettings : UserControl
                 TimerPhase.Ended => 3,
                 _ => 0,
             };
+        };
+        getIndex = () => model.CurrentState.CurrentSplitIndex;
+        segmentSplitted = (idx) =>
+        {
+            if (!(0 <= idx && idx < model.CurrentState.CurrentSplitIndex))
+            {
+                return -1;
+            }
+
+            return model.CurrentState.Run[idx].SplitTime.RealTime != null ? 1 : 0;
         };
         start = model.Start;
         split = model.Split;
@@ -116,6 +128,8 @@ public partial class ComponentSettings : UserControl
                     ScriptPath,
                     settingsMap,
                     getState,
+                    getIndex,
+                    segmentSplitted,
                     start,
                     split,
                     skipSplit,

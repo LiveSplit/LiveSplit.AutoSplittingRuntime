@@ -43,6 +43,8 @@ public class Runtime : RuntimeRefMut, IDisposable
         string path,
         SettingsMap settingsMap,
         StateDelegate state,
+        IndexDelegate index,
+        SegmentSplittedDelegate segmentSplitted,
         Action start,
         Action split,
         Action skipSplit,
@@ -65,6 +67,8 @@ public class Runtime : RuntimeRefMut, IDisposable
             path,
             settingsMapPtr,
             state,
+            index,
+            segmentSplitted,
             start,
             split,
             skipSplit,
@@ -709,6 +713,8 @@ public class Widgets : WidgetsRefMut, IDisposable
 }
 
 public delegate int StateDelegate();
+public delegate int IndexDelegate();
+public delegate int SegmentSplittedDelegate(int idx);
 public delegate void SetGameTimeDelegate(long gameTime);
 public delegate void SetCustomVariableDelegate(IntPtr namePtr, UIntPtr nameLen, IntPtr valuePtr, UIntPtr valueLen);
 public delegate void LogDelegate(IntPtr messagePtr, UIntPtr messageLen);
@@ -720,6 +726,8 @@ public static class ASRNative
         ASRString path,
         IntPtr settings_map,
         StateDelegate state,
+        IndexDelegate index,
+        SegmentSplittedDelegate segmentSplitted,
         Action start,
         Action split,
         Action skipSplit,
