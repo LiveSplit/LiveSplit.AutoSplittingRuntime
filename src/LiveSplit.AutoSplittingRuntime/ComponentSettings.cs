@@ -175,7 +175,7 @@ public partial class ComponentSettings : UserControl
                 {
                     case "bool":
                     {
-                        if (rowIndex < settingsTable.RowCount
+                        if (rowIndex < settingsTable.RowStyles.Count
                             && settingsTable.GetControlFromPosition(0, rowIndex) is CheckBox exCheckbox
                             && exCheckbox.Text == desc
                             && exCheckbox.Tag is string exTag
@@ -210,7 +210,7 @@ public partial class ComponentSettings : UserControl
                         int headingLevel = (int)widgets.GetHeadingLevel(i);
                         margin = 20 * headingLevel;
 
-                        if (rowIndex < settingsTable.RowCount
+                        if (rowIndex < settingsTable.RowStyles.Count
                             && settingsTable.GetControlFromPosition(0, rowIndex) is Label exLabel
                             && exLabel.Margin.Left == margin
                             && exLabel.Text == $"—  {desc}")
@@ -237,7 +237,7 @@ public partial class ComponentSettings : UserControl
                     }
                     case "choice":
                     {
-                        if (rowIndex < settingsTable.RowCount
+                        if (rowIndex < settingsTable.RowStyles.Count
                             && settingsTable.GetControlFromPosition(0, rowIndex) is Label exLabel
                             && exLabel.Text == desc
                             && exLabel.Margin.Left == margin)
@@ -260,7 +260,7 @@ public partial class ComponentSettings : UserControl
 
                         rowIndex++;
 
-                        if (rowIndex < settingsTable.RowCount
+                        if (rowIndex < settingsTable.RowStyles.Count
                             && settingsTable.GetControlFromPosition(0, rowIndex) is ComboBox exCombo
                             && exCombo.Tag is string exTag
                             && exTag == widgets.GetKey(i)
@@ -303,7 +303,7 @@ public partial class ComponentSettings : UserControl
                     }
                     case "file-select":
                     {
-                        if (rowIndex < settingsTable.RowCount
+                        if (rowIndex < settingsTable.RowStyles.Count
                             && settingsTable.GetControlFromPosition(0, rowIndex) is Button exButton
                             && exButton.Tag is FileSelectInfo exTag
                             && exTag.key == widgets.GetKey(i)
@@ -355,12 +355,13 @@ public partial class ComponentSettings : UserControl
             return;
         }
 
-        for (int j = settingsTable.RowCount - 1; j >= rowIndex; j--)
+        for (int j = settingsTable.RowStyles.Count - 1; j >= rowIndex; j--)
         {
             settingsTable.Controls.Remove(settingsTable.GetControlFromPosition(0, j));
-            settingsTable.RowCount--;
             settingsTable.RowStyles.RemoveAt(j);
         }
+
+        settingsTable.RowCount = rowIndex;
     }
 
     private void Combo_SelectedIndexChanged(object sender, EventArgs e)
