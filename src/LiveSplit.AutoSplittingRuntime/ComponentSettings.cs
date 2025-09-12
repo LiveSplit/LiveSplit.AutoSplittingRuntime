@@ -151,10 +151,6 @@ public partial class ComponentSettings : UserControl
 
     public void BuildTree()
     {
-        settingsTable.Controls.Clear();
-        settingsTable.RowCount = 0;
-        settingsTable.RowStyles.Clear();
-
         if (runtime != null)
         {
             previousWidgets?.Dispose();
@@ -167,6 +163,8 @@ public partial class ComponentSettings : UserControl
 
             int margin = 3;
 
+            int rowIndex = 0;
+
             for (ulong i = 0; i < len; i++)
             {
                 string desc = widgets.GetDescription(i);
@@ -177,86 +175,161 @@ public partial class ComponentSettings : UserControl
                 {
                     case "bool":
                     {
-                        var checkbox = new CheckBox
+                        if (rowIndex < settingsTable.RowCount
+                            && settingsTable.GetControlFromPosition(0, rowIndex) is CheckBox exCheckbox
+                            && exCheckbox.Text == desc
+                            && exCheckbox.Tag is string exTag
+                            && exTag == widgets.GetKey(i)
+                            && exCheckbox.Margin.Left == margin)
                         {
-                            Text = desc,
-                            Tag = widgets.GetKey(i),
-                            Margin = new Padding(margin, 0, 0, 0),
-                            Checked = widgets.GetBool(i, settingsMap)
-                        };
-                        checkbox.CheckedChanged += Checkbox_CheckedChanged;
-                        checkbox.Anchor |= AnchorStyles.Right;
-                        toolTip.SetToolTip(checkbox, tooltip);
-                        settingsTable.Controls.Add(checkbox, 0, settingsTable.RowStyles.Count);
-                        settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, checkbox.Height));
+                            exCheckbox.Checked = widgets.GetBool(i, settingsMap);
+                            toolTip.SetToolTip(exCheckbox, tooltip);
+                        }
+                        else
+                        {
+                            ClearSettingsTableTail(rowIndex);
+                            var checkbox = new CheckBox
+                            {
+                                Text = desc,
+                                Tag = widgets.GetKey(i),
+                                Margin = new Padding(margin, 0, 0, 0),
+                                Checked = widgets.GetBool(i, settingsMap)
+                            };
+                            checkbox.CheckedChanged += Checkbox_CheckedChanged;
+                            checkbox.Anchor |= AnchorStyles.Right;
+                            toolTip.SetToolTip(checkbox, tooltip);
+                            settingsTable.Controls.Add(checkbox, 0, settingsTable.RowStyles.Count);
+                            settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, checkbox.Height));
+                        }
+
+                        rowIndex++;
                         break;
                     }
                     case "title":
                     {
                         int headingLevel = (int)widgets.GetHeadingLevel(i);
                         margin = 20 * headingLevel;
-                        var label = new Label
+
+                        if (rowIndex < settingsTable.RowCount
+                            && settingsTable.GetControlFromPosition(0, rowIndex) is Label exLabel
+                            && exLabel.Margin.Left == margin
+                            && exLabel.Text == $"—  {desc}")
                         {
-                            Margin = new Padding(margin, 3, 0, 0),
-                            Text = $"—  {desc}"
-                        };
+                            toolTip.SetToolTip(exLabel, tooltip);
+                        }
+                        else
+                        {
+                            ClearSettingsTableTail(rowIndex);
+                            var label = new Label
+                            {
+                                Margin = new Padding(margin, 3, 0, 0),
+                                Text = $"—  {desc}"
+                            };
+                            label.Anchor |= AnchorStyles.Right;
+                            toolTip.SetToolTip(label, tooltip);
+                            settingsTable.Controls.Add(label, 0, settingsTable.RowStyles.Count);
+                            settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, label.Height));
+                        }
+
                         margin += 20;
-                        label.Anchor |= AnchorStyles.Right;
-                        toolTip.SetToolTip(label, tooltip);
-                        settingsTable.Controls.Add(label, 0, settingsTable.RowStyles.Count);
-                        settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, label.Height));
+                        rowIndex++;
                         break;
                     }
                     case "choice":
                     {
-                        var label = new Label
+                        if (rowIndex < settingsTable.RowCount
+                            && settingsTable.GetControlFromPosition(0, rowIndex) is Label exLabel
+                            && exLabel.Text == desc
+                            && exLabel.Margin.Left == margin)
                         {
-                            Text = desc,
-                            Margin = new Padding(margin, 0, 0, 0)
-                        };
-                        label.Anchor |= AnchorStyles.Right;
-                        toolTip.SetToolTip(label, tooltip);
-                        settingsTable.Controls.Add(label, 0, settingsTable.RowStyles.Count);
-                        settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, label.Height));
-
-                        var combo = new ComboBox
+                            toolTip.SetToolTip(exLabel, tooltip);
+                        }
+                        else
                         {
-                            Tag = widgets.GetKey(i),
-                            Margin = new Padding(margin, 0, 0, 0),
-                            DropDownStyle = ComboBoxStyle.DropDownList
-                        };
-                        combo.Anchor |= AnchorStyles.Right;
-                        toolTip.SetToolTip(combo, tooltip);
-                        ulong choicesLen = widgets.GetChoiceOptionsLength(i);
-                        for (ulong choiceIndex = 0; choiceIndex < choicesLen; choiceIndex++)
-                        {
-                            var choice = new Choice
+                            ClearSettingsTableTail(rowIndex);
+                            var label = new Label
                             {
-                                description = widgets.GetChoiceOptionDescription(i, choiceIndex),
-                                key = widgets.GetChoiceOptionKey(i, choiceIndex)
+                                Text = desc,
+                                Margin = new Padding(margin, 0, 0, 0)
                             };
-                            combo.Items.Add(choice);
+                            label.Anchor |= AnchorStyles.Right;
+                            toolTip.SetToolTip(label, tooltip);
+                            settingsTable.Controls.Add(label, 0, settingsTable.RowStyles.Count);
+                            settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, label.Height));
                         }
 
-                        combo.SelectedIndex = (int)widgets.GetChoiceCurrentIndex(i, settingsMap);
-                        combo.SelectedIndexChanged += Combo_SelectedIndexChanged;
-                        settingsTable.Controls.Add(combo, 0, settingsTable.RowStyles.Count);
-                        settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, combo.Height + 5));
+                        rowIndex++;
+
+                        if (rowIndex < settingsTable.RowCount
+                            && settingsTable.GetControlFromPosition(0, rowIndex) is ComboBox exCombo
+                            && exCombo.Tag is string exTag
+                            && exTag == widgets.GetKey(i)
+                            && exCombo.Margin.Left == margin
+                            && exCombo.Items.Count == (int)widgets.GetChoiceOptionsLength(i))
+                        {
+                            toolTip.SetToolTip(exCombo, tooltip);
+                            exCombo.SelectedIndex = (int)widgets.GetChoiceCurrentIndex(i, settingsMap);
+                        }
+                        else
+                        {
+                            ClearSettingsTableTail(rowIndex);
+                            var combo = new ComboBox
+                            {
+                                Tag = widgets.GetKey(i),
+                                Margin = new Padding(margin, 0, 0, 0),
+                                DropDownStyle = ComboBoxStyle.DropDownList
+                            };
+                            combo.Anchor |= AnchorStyles.Right;
+                            toolTip.SetToolTip(combo, tooltip);
+                            ulong choicesLen = widgets.GetChoiceOptionsLength(i);
+                            for (ulong choiceIndex = 0; choiceIndex < choicesLen; choiceIndex++)
+                            {
+                                var choice = new Choice
+                                {
+                                    description = widgets.GetChoiceOptionDescription(i, choiceIndex),
+                                    key = widgets.GetChoiceOptionKey(i, choiceIndex)
+                                };
+                                combo.Items.Add(choice);
+                            }
+
+                            combo.SelectedIndex = (int)widgets.GetChoiceCurrentIndex(i, settingsMap);
+                            combo.SelectedIndexChanged += Combo_SelectedIndexChanged;
+                            settingsTable.Controls.Add(combo, 0, settingsTable.RowStyles.Count);
+                            settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, combo.Height + 5));
+                        }
+
+                        rowIndex++;
                         break;
                     }
                     case "file-select":
                     {
-                        var button = new Button
+                        if (rowIndex < settingsTable.RowCount
+                            && settingsTable.GetControlFromPosition(0, rowIndex) is Button exButton
+                            && exButton.Tag is FileSelectInfo exTag
+                            && exTag.key == widgets.GetKey(i)
+                            && exTag.filter == widgets.GetFileSelectFilter(i)
+                            && exButton.Text == desc
+                            && exButton.Margin.Left == margin)
                         {
-                            Tag = new FileSelectInfo(widgets.GetKey(i), widgets.GetFileSelectFilter(i)),
-                            Text = desc,
-                            Margin = new Padding(margin, 0, 0, 0),
-                        };
-                        button.Click += FileSelect_Click;
-                        button.Anchor |= AnchorStyles.Right;
-                        toolTip.SetToolTip(button, tooltip);
-                        settingsTable.Controls.Add(button, 0, settingsTable.RowStyles.Count);
-                        settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, button.Height));
+                            toolTip.SetToolTip(exButton, tooltip);
+                        }
+                        else
+                        {
+                            ClearSettingsTableTail(rowIndex);
+                            var button = new Button
+                            {
+                                Tag = new FileSelectInfo(widgets.GetKey(i), widgets.GetFileSelectFilter(i)),
+                                Text = desc,
+                                Margin = new Padding(margin, 0, 0, 0),
+                            };
+                            button.Click += FileSelect_Click;
+                            button.Anchor |= AnchorStyles.Right;
+                            toolTip.SetToolTip(button, tooltip);
+                            settingsTable.Controls.Add(button, 0, settingsTable.RowStyles.Count);
+                            settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, button.Height));
+                        }
+
+                        rowIndex++;
                         break;
                     }
                     default:
@@ -265,6 +338,28 @@ public partial class ComponentSettings : UserControl
                     }
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Clears the settingsTable rows from rowIndex onward
+    /// </summary>
+    /// <param name="rowIndex">The row position to start clearing after</param>
+    private void ClearSettingsTableTail(int rowIndex)
+    {
+        if (rowIndex == 0)
+        {
+            settingsTable.Controls.Clear();
+            settingsTable.RowCount = 0;
+            settingsTable.RowStyles.Clear();
+            return;
+        }
+
+        for (int j = settingsTable.RowCount - 1; j >= rowIndex; j--)
+        {
+            settingsTable.Controls.Remove(settingsTable.GetControlFromPosition(0, j));
+            settingsTable.RowCount--;
+            settingsTable.RowStyles.RemoveAt(j);
         }
     }
 
