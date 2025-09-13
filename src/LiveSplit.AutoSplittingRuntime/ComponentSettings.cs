@@ -157,7 +157,7 @@ public partial class ComponentSettings : UserControl
             Widgets widgets = previousWidgets = runtime.GetSettingsWidgets();
 
             previousMap?.Dispose();
-            SettingsMap settingsMap = previousMap = runtime.GetSettingsMap();
+            previousMap = runtime.GetSettingsMap();
 
             ulong len = widgets.GetLength();
 
@@ -182,7 +182,7 @@ public partial class ComponentSettings : UserControl
                             && exTag == widgets.GetKey(i)
                             && exCheckbox.Margin.Left == margin)
                         {
-                            exCheckbox.Checked = widgets.GetBool(i, settingsMap);
+                            exCheckbox.Checked = widgets.GetBool(i, previousMap);
                             toolTip.SetToolTip(exCheckbox, tooltip);
                         }
                         else
@@ -193,7 +193,7 @@ public partial class ComponentSettings : UserControl
                                 Text = desc,
                                 Tag = widgets.GetKey(i),
                                 Margin = new Padding(margin, 0, 0, 0),
-                                Checked = widgets.GetBool(i, settingsMap)
+                                Checked = widgets.GetBool(i, previousMap)
                             };
                             checkbox.CheckedChanged += Checkbox_CheckedChanged;
                             checkbox.Anchor |= AnchorStyles.Right;
@@ -268,7 +268,7 @@ public partial class ComponentSettings : UserControl
                             && exCombo.Items.Count == (int)widgets.GetChoiceOptionsLength(i))
                         {
                             toolTip.SetToolTip(exCombo, tooltip);
-                            exCombo.SelectedIndex = (int)widgets.GetChoiceCurrentIndex(i, settingsMap);
+                            exCombo.SelectedIndex = (int)widgets.GetChoiceCurrentIndex(i, previousMap);
                         }
                         else
                         {
@@ -292,7 +292,7 @@ public partial class ComponentSettings : UserControl
                                 combo.Items.Add(choice);
                             }
 
-                            combo.SelectedIndex = (int)widgets.GetChoiceCurrentIndex(i, settingsMap);
+                            combo.SelectedIndex = (int)widgets.GetChoiceCurrentIndex(i, previousMap);
                             combo.SelectedIndexChanged += Combo_SelectedIndexChanged;
                             settingsTable.Controls.Add(combo, 0, settingsTable.RowStyles.Count);
                             settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, combo.Height + 5));
