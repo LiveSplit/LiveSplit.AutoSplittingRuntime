@@ -13,7 +13,7 @@ public class ASRFactory : IComponentFactory
     public string ComponentName => "Auto Splitting Runtime";
     public string Description => "Allows auto splitters provided as WebAssembly modules to define the splitting behaviour.";
     public ComponentCategory Category => ComponentCategory.Control;
-    public Version Version => Version.Parse("0.0.10");
+    public Version Version => Version.Parse("0.0.11");
 
     public string UpdateName => ComponentName;
     public string UpdateURL => "http://livesplit.org/update/";
