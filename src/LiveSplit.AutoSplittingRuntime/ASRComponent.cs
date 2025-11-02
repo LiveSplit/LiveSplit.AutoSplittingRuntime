@@ -39,6 +39,8 @@ public class ASRComponent : LogicComponent
 
     public ASRComponent(LiveSplitState state, string scriptPath)
     {
+        parentForm = state.Form;
+
         model = new TimerModel() { CurrentState = state };
 
         settings = new ComponentSettings(model, scriptPath);
