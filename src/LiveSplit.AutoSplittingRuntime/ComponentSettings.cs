@@ -27,6 +27,7 @@ public partial class ComponentSettings : UserControl
         }
     }
     private readonly bool fixedScriptPath = false;
+    private readonly string scriptExtention = ".wasm";
 
     public Runtime runtime = null;
 
@@ -748,7 +749,7 @@ public partial class ComponentSettings : UserControl
     {
         var dialog = new OpenFileDialog()
         {
-            Filter = "WebAssembly module (*.wasm)|*.wasm|All Files (*.*)|*.*"
+            Filter = $"WebAssembly module (*{scriptExtention})|*{scriptExtention}|All Files (*.*)|*.*"
         };
         if (File.Exists(ScriptPath))
         {
@@ -759,6 +760,34 @@ public partial class ComponentSettings : UserControl
         if (dialog.ShowDialog() == DialogResult.OK)
         {
             scriptPath = txtScriptPath.Text = dialog.FileName;
+        }
+    }
+
+    private void txtScriptPath_DragDrop(object sender, DragEventArgs e)
+    {
+        string[] paths = (string[])e.Data.GetData(DataFormats.FileDrop, false);
+        foreach (string path in paths)
+        {
+            if (Path.GetExtension(path).ToLower() != scriptExtention)
+            {
+                continue;
+            }
+
+            txtScriptPath.Text = path;
+            ScriptPath = path;
+            break;
+        }
+    }
+
+    private void txtScriptPath_DragEnter(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            e.Effect = DragDropEffects.Copy;
+        }
+        else
+        {
+            e.Effect = DragDropEffects.None;
         }
     }
 
