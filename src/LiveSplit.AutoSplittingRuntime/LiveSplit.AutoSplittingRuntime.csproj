@@ -9,13 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="x64\asr_capi.dll" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="x86\asr_capi.dll" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="x64/asr_capi.dll" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="x86/asr_capi.dll" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LsSrcPath)\LiveSplit.Core\LiveSplit.Core.csproj" Private="false" ExcludeAssets="runtime" />
-    <ProjectReference Include="$(LsSrcPath)\UpdateManager\UpdateManager.csproj" Private="false" ExcludeAssets="runtime" />
+    <ProjectReference Include="$(LsSrcPath)/LiveSplit.Core/LiveSplit.Core.csproj" Private="false" ExcludeAssets="runtime" />
+    <ProjectReference Include="$(LsSrcPath)/UpdateManager/UpdateManager.csproj" Private="false" ExcludeAssets="runtime" />
   </ItemGroup>
 
   <ItemGroup>
