@@ -58,10 +58,7 @@ public class Runtime : RuntimeRefMut, IDisposable
     ) : base(IntPtr.Zero)
     {
         IntPtr settingsMapPtr = settingsMap?.ptr ?? IntPtr.Zero;
-        if (settingsMap != null)
-        {
-            settingsMap.ptr = IntPtr.Zero;
-        }
+        settingsMap?.ptr = IntPtr.Zero;
 
         ptr = ASRNative.Runtime_new(
             path,
