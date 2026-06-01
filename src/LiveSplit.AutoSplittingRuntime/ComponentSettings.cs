@@ -1,13 +1,11 @@
-﻿using System;
-using System.Drawing;
+﻿using LiveSplit.Model;
+using LiveSplit.Options;
+using LiveSplit.UI;
+using System;
 using System.Globalization;
 using System.IO;
 using System.Windows.Forms;
 using System.Xml;
-
-using LiveSplit.Model;
-using LiveSplit.Options;
-using LiveSplit.UI;
 
 namespace LiveSplit.AutoSplittingRuntime;
 
@@ -781,14 +779,7 @@ public partial class ComponentSettings : UserControl
 
     private void txtScriptPath_DragEnter(object sender, DragEventArgs e)
     {
-        if (e.Data.GetDataPresent(DataFormats.FileDrop))
-        {
-            e.Effect = DragDropEffects.Copy;
-        }
-        else
-        {
-            e.Effect = DragDropEffects.None;
-        }
+        e.Effect = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
     }
 
     private void ComponentSettings_Load(object sender, EventArgs e)

@@ -1,11 +1,9 @@
-﻿using System;
-using System.Windows.Forms;
-using System.Xml;
-
-using LiveSplit.Model;
+﻿using LiveSplit.Model;
 using LiveSplit.UI;
 using LiveSplit.UI.Components;
-
+using System;
+using System.Windows.Forms;
+using System.Xml;
 using Timer = System.Timers.Timer;
 
 namespace LiveSplit.AutoSplittingRuntime;
@@ -130,7 +128,7 @@ public class ASRComponent : LogicComponent
 
     private void InvokeIfNeeded(Action x)
     {
-        if (parentForm != null && parentForm.InvokeRequired)
+        if (parentForm is { InvokeRequired: true })
         {
             parentForm.Invoke(x);
         }

@@ -7,10 +7,10 @@ namespace LiveSplit.AutoSplittingRuntime;
 public class ASRLoader
 {
     [DllImport("kernel32")]
-    private unsafe static extern void* LoadLibrary(string dllname);
+    private static extern unsafe void* LoadLibrary(string dllname);
 
     [DllImport("kernel32")]
-    private unsafe static extern void FreeLibrary(void* handle);
+    private static extern unsafe void FreeLibrary(void* handle);
 
     private sealed unsafe class LibraryUnloader
     {
@@ -40,17 +40,9 @@ public class ASRLoader
             return;
         }
 
-        string path;
-
-        if (Unsafe.SizeOf<IntPtr>() == 8)
-        {
-            path = @"Components\x64\asr_capi.dll";
-        }
-        else
-        {
-            path = @"Components\x86\asr_capi.dll";
-        }
-
+        string path = Unsafe.SizeOf<IntPtr>() == 8
+            ? @"Components\x64\asr_capi.dll"
+            : @"Components\x86\asr_capi.dll";
         unsafe
         {
             void* handle = LoadLibrary(path);

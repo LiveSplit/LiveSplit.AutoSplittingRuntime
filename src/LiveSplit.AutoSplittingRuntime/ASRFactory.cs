@@ -1,8 +1,7 @@
-﻿using System;
-
-using LiveSplit.AutoSplittingRuntime;
+﻿using LiveSplit.AutoSplittingRuntime;
 using LiveSplit.Model;
 using LiveSplit.UI.Components;
+using System;
 
 [assembly: ComponentFactory(typeof(ASRFactory))]
 
