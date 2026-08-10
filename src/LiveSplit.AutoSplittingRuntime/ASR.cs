@@ -607,6 +607,7 @@ public class WidgetsRef
             2 => "title",
             3 => "choice",
             4 => "file-select",
+            5 => "text-input",
             _ => "",
         };
     }
@@ -679,6 +680,21 @@ public class WidgetsRef
         }
 
         return ASRNative.Widgets_get_file_select_filter(ptr, (UIntPtr)index);
+    }
+
+    public string GetTextInput(ulong index, SettingsMapRef settingsMap)
+    {
+        if (ptr == IntPtr.Zero)
+        {
+            return "";
+        }
+
+        if (settingsMap.ptr == IntPtr.Zero)
+        {
+            return "";
+        }
+
+        return ASRNative.Widgets_get_text_input(ptr, (UIntPtr)index, settingsMap.ptr);
     }
 }
 
@@ -836,6 +852,8 @@ public static class ASRNative
     public static extern ASRString Widgets_get_choice_option_description(IntPtr self, UIntPtr index, UIntPtr option_index);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
     public static extern ASRString Widgets_get_file_select_filter(IntPtr self, UIntPtr index);
+    [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+    public static extern ASRString Widgets_get_text_input(IntPtr self, UIntPtr index, IntPtr settings_map);
 
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
     public static extern UIntPtr get_buf_len();

@@ -331,6 +331,59 @@ public partial class ComponentSettings : UserControl
                         rowIndex++;
                         break;
                     }
+                    case "text-input":
+                    {
+                        if (rowIndex < settingsTable.RowStyles.Count
+                            && settingsTable.GetControlFromPosition(0, rowIndex) is Label exLabel
+                            && exLabel.Text == desc
+                            && exLabel.Margin.Left == margin)
+                        {
+                            toolTip.SetToolTip(exLabel, tooltip);
+                        }
+                        else
+                        {
+                            ClearSettingsTableTail(rowIndex);
+                            var label = new Label
+                            {
+                                Text = desc,
+                                Margin = new Padding(margin, 0, 0, 0)
+                            };
+                            label.Anchor |= AnchorStyles.Right;
+                            toolTip.SetToolTip(label, tooltip);
+                            settingsTable.Controls.Add(label, 0, settingsTable.RowStyles.Count);
+                            settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, label.Height));
+                        }
+
+                        rowIndex++;
+
+                        if (rowIndex < settingsTable.RowStyles.Count
+                            && settingsTable.GetControlFromPosition(0, rowIndex) is TextBox exTextBox
+                            && exTextBox.Tag is string exTag
+                            && exTag == widgets.GetKey(i)
+                            && exTextBox.Margin.Left == margin)
+                        {
+                            toolTip.SetToolTip(exTextBox, tooltip);
+                            exTextBox.Text = widgets.GetTextInput(i, previousMap);
+                        }
+                        else
+                        {
+                            ClearSettingsTableTail(rowIndex);
+                            var textBox = new TextBox
+                            {
+                                Tag = widgets.GetKey(i),
+                                Margin = new Padding(margin, 0, 0, 0),
+                                Text = widgets.GetTextInput(i, previousMap)
+                            };
+                            textBox.Anchor |= AnchorStyles.Right;
+                            toolTip.SetToolTip(textBox, tooltip);
+                            textBox.TextChanged += TextInput_TextChanged;
+                            settingsTable.Controls.Add(textBox, 0, settingsTable.RowStyles.Count);
+                            settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, textBox.Height + 5));
+                        }
+
+                        rowIndex++;
+                        break;
+                    }
                     default:
                     {
                         break;
@@ -381,6 +434,23 @@ public partial class ComponentSettings : UserControl
         if (runtime != null)
         {
             runtime.SettingsMapSetString((string)combo.Tag, choice.key);
+            SettingsMap prev = previousMap;
+            previousMap = runtime.GetSettingsMap();
+            prev?.Dispose();
+        }
+    }
+
+    private void TextInput_TextChanged(object sender, EventArgs e)
+    {
+        var textBox = (TextBox)sender;
+        if (textBox.Tag is not string)
+        {
+            return;
+        }
+
+        if (runtime != null)
+        {
+            runtime.SettingsMapSetString((string)textBox.Tag, textBox.Text);
             SettingsMap prev = previousMap;
             previousMap = runtime.GetSettingsMap();
             prev?.Dispose();

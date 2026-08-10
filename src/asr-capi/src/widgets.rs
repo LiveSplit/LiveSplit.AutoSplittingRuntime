@@ -67,6 +67,7 @@ pub extern "C" fn Widgets_get_type(_this: &Widgets, _index: usize) -> usize {
             WidgetKind::Title { .. } => 2,
             WidgetKind::Choice { .. } => 3,
             WidgetKind::FileSelect { .. } => 4,
+            WidgetKind::TextInput { .. } => 5,
         }
     }
     #[cfg(not(target_pointer_width = "64"))]
@@ -187,6 +188,27 @@ pub extern "C" fn Widgets_get_heading_level(_this: &Widgets, _index: usize) -> u
             return 0;
         };
         heading_level
+    }
+    #[cfg(not(target_pointer_width = "64"))]
+    panic!("Index out of bounds")
+}
+
+#[no_mangle]
+pub extern "C" fn Widgets_get_text_input(
+    _this: &Widgets,
+    _index: usize,
+    _settings_map: &SettingsMap,
+) -> *const u8 {
+    #[cfg(target_pointer_width = "64")]
+    {
+        let setting = &_this.inner[_index];
+        let WidgetKind::TextInput { default_value } = &setting.kind else {
+            return output_str("");
+        };
+        match _settings_map.get(&setting.key) {
+            Some(SettingValue::String(stored)) => output_str(stored),
+            _ => output_str(default_value),
+        }
     }
     #[cfg(not(target_pointer_width = "64"))]
     panic!("Index out of bounds")
