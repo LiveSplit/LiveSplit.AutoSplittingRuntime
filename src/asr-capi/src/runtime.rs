@@ -193,6 +193,31 @@ pub unsafe extern "C" fn Runtime_settings_map_set_string(
     panic!("Index out of bounds")
 }
 
+/// # Safety
+/// `key` must be a valid NUL-terminated UTF-8 C string (same convention as other Runtime_* key APIs).
+#[no_mangle]
+pub unsafe extern "C" fn Runtime_invoke_settings_button(
+    _this: &Runtime,
+    key: *const u8,
+) -> bool {
+    #[cfg(target_pointer_width = "64")]
+    {
+        let key = str(key);
+        match _this.runtime.invoke_settings_button(key) {
+            Ok(_) => true,
+            Err(err) => {
+                log(
+                    _this.log,
+                    format_args!("{:?}", err.context("Failed executing the auto splitter.")),
+                );
+                false
+            }
+        }
+    }
+    #[cfg(not(target_pointer_width = "64"))]
+    false
+}
+
 #[no_mangle]
 pub extern "C" fn Runtime_get_settings_map(_this: &Runtime) -> Box<SettingsMap> {
     #[cfg(target_pointer_width = "64")]

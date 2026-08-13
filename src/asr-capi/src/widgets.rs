@@ -67,6 +67,7 @@ pub extern "C" fn Widgets_get_type(_this: &Widgets, _index: usize) -> usize {
             WidgetKind::Title { .. } => 2,
             WidgetKind::Choice { .. } => 3,
             WidgetKind::FileSelect { .. } => 4,
+            WidgetKind::Button => 5,
         }
     }
     #[cfg(not(target_pointer_width = "64"))]
