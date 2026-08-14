@@ -331,6 +331,37 @@ public partial class ComponentSettings : UserControl
                         rowIndex++;
                         break;
                     }
+                    case "button":
+                    {
+                        if (rowIndex < settingsTable.RowStyles.Count
+                            && settingsTable.GetControlFromPosition(0, rowIndex) is Button exButton
+                            && exButton.Tag is string exTag
+                            && exTag == widgets.GetKey(i)
+                            && exButton.Text == desc
+                            && exButton.Margin.Left == margin)
+                        {
+                            toolTip.SetToolTip(exButton, tooltip);
+                        }
+                        else
+                        {
+                            ClearSettingsTableTail(rowIndex);
+                            var button = new Button
+                            {
+                                Tag = widgets.GetKey(i),
+                                Text = desc,
+                                Margin = new Padding(margin, 0, 0, 0),
+                                AutoSize = true,
+                                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                            };
+                            button.Click += SettingsButton_Click;
+                            toolTip.SetToolTip(button, tooltip);
+                            settingsTable.Controls.Add(button, 0, settingsTable.RowStyles.Count);
+                            settingsTable.RowStyles.Add(new RowStyle(SizeType.Absolute, button.Height));
+                        }
+
+                        rowIndex++;
+                        break;
+                    }
                     default:
                     {
                         break;
@@ -432,6 +463,22 @@ public partial class ComponentSettings : UserControl
                 prev?.Dispose();
             }
         }
+    }
+
+    private void SettingsButton_Click(object sender, EventArgs e)
+    {
+        var button = (Button)sender;
+        if (button.Tag is not string key || runtime == null)
+        {
+            return;
+        }
+
+        runtime.InvokeSettingsButton(key);
+        // Callback may have mutated the settings map or widgets
+        SettingsMap prev = previousMap;
+        previousMap = runtime.GetSettingsMap();
+        prev?.Dispose();
+        BuildTree();
     }
 
     private class Choice

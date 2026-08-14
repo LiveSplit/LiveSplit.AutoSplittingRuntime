@@ -134,6 +134,16 @@ public class Runtime : RuntimeRefMut, IDisposable
         ASRNative.Runtime_settings_map_set_string(ptr, key, value);
     }
 
+    public bool InvokeSettingsButton(string key)
+    {
+        if (ptr == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        return ASRNative.Runtime_invoke_settings_button(ptr, key) != 0;
+    }
+
     public SettingsMap GetSettingsMap()
     {
         if (ptr == IntPtr.Zero)
@@ -607,6 +617,7 @@ public class WidgetsRef
             2 => "title",
             3 => "choice",
             4 => "file-select",
+            5 => "button",
             _ => "",
         };
     }
@@ -748,6 +759,8 @@ public static class ASRNative
     public static extern void Runtime_settings_map_set_bool(IntPtr self, ASRString key, byte value);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
     public static extern void Runtime_settings_map_set_string(IntPtr self, ASRString key, ASRString value);
+    [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
+    public static extern byte Runtime_invoke_settings_button(IntPtr self, ASRString key);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr Runtime_get_settings_map(IntPtr self);
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
