@@ -37,6 +37,7 @@ pub unsafe extern "C" fn Runtime_new(
     _resume_game_time: unsafe extern "C" fn(),
     _set_custom_variable: unsafe extern "C" fn(*const u8, usize, *const u8, usize),
     _log: unsafe extern "C" fn(*const u8, usize),
+    _get_splits_path: unsafe extern "C" fn() -> *const u8,
 ) -> Option<Box<Runtime>> {
     #[cfg(target_pointer_width = "64")]
     {
@@ -77,6 +78,7 @@ pub unsafe extern "C" fn Runtime_new(
                             resume_game_time: _resume_game_time,
                             set_custom_variable: _set_custom_variable,
                             log: _log,
+                            get_splits_path: _get_splits_path,
                         },
                         _settings_map.map(|settings_map| *settings_map),
                         None,

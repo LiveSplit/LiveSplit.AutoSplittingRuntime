@@ -54,7 +54,8 @@ public class Runtime : RuntimeRefMut, IDisposable
         Action pauseGameTime,
         Action resumeGameTime,
         SetCustomVariableDelegate setCustomVariable,
-        LogDelegate log
+        LogDelegate log,
+        GetSplitsPathDelegate getSplitsPath
     ) : base(IntPtr.Zero)
     {
         IntPtr settingsMapPtr = settingsMap?.ptr ?? IntPtr.Zero;
@@ -75,7 +76,8 @@ public class Runtime : RuntimeRefMut, IDisposable
             pauseGameTime,
             resumeGameTime,
             setCustomVariable,
-            log
+            log,
+            getSplitsPath
         );
         if (ptr == IntPtr.Zero)
         {
@@ -715,6 +717,8 @@ public delegate int SegmentSplittedDelegate(int idx);
 public delegate void SetGameTimeDelegate(long gameTime);
 public delegate void SetCustomVariableDelegate(IntPtr namePtr, UIntPtr nameLen, IntPtr valuePtr, UIntPtr valueLen);
 public delegate void LogDelegate(IntPtr messagePtr, UIntPtr messageLen);
+[return: MarshalAs(UnmanagedType.LPUTF8Str)]
+public delegate string GetSplitsPathDelegate();
 
 public static class ASRNative
 {
@@ -734,7 +738,8 @@ public static class ASRNative
         Action pause_game_time,
         Action resume_game_time,
         SetCustomVariableDelegate set_custom_variable,
-        LogDelegate log
+        LogDelegate log,
+        GetSplitsPathDelegate getSplitsPath
     );
     [DllImport("asr_capi", CallingConvention = CallingConvention.Cdecl)]
     public static extern void Runtime_drop(IntPtr self);

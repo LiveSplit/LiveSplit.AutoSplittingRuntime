@@ -39,6 +39,7 @@ public partial class ComponentSettings : UserControl
     };
 
     private readonly StateDelegate getState;
+    private readonly GetSplitsPathDelegate getSplitsPath;
     private readonly IndexDelegate getIndex;
     private readonly SegmentSplittedDelegate segmentSplitted;
     private readonly Action start;
@@ -71,6 +72,7 @@ public partial class ComponentSettings : UserControl
                 _ => 0,
             };
         };
+        getSplitsPath = () => model.CurrentState.Run?.FilePath ?? "";
         getIndex = () => model.CurrentState.CurrentSplitIndex;
         segmentSplitted = (idx) =>
         {
@@ -138,7 +140,8 @@ public partial class ComponentSettings : UserControl
                     pauseGameTime,
                     resumeGameTime,
                     setCustomVariable,
-                    log
+                    log,
+                    getSplitsPath
                 );
             }
         }
