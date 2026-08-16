@@ -1,6 +1,6 @@
 #[cfg(target_pointer_width = "64")]
 use {
-    livesplit_auto_splitting::{time, wasi_path, LogLevel, Timer, TimerState},
+    livesplit_auto_splitting::{time, wasi_path, LogLevel, Timer, TimerState, TimingMethod},
     std::{cell::RefCell, ffi::CStr, fmt, path::Path},
 };
 
@@ -58,6 +58,7 @@ pub struct CTimer {
     set_game_time: unsafe extern "C" fn(i64),
     pause_game_time: unsafe extern "C" fn(),
     resume_game_time: unsafe extern "C" fn(),
+    set_timing_method: unsafe extern "C" fn(u32),
     set_custom_variable: unsafe extern "C" fn(*const u8, usize, *const u8, usize),
     log: unsafe extern "C" fn(*const u8, usize),
 }
@@ -126,6 +127,14 @@ impl Timer for CTimer {
 
     fn resume_game_time(&mut self) {
         unsafe { (self.resume_game_time)() }
+    }
+
+    fn set_timing_method(&mut self, method: TimingMethod) {
+        let v = match method {
+            TimingMethod::RealTime => 0u32,
+            TimingMethod::GameTime => 1u32,
+        };
+        unsafe { (self.set_timing_method)(v) }
     }
 
     fn set_variable(&mut self, name: &str, value: &str) {

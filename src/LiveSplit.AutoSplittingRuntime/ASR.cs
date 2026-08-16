@@ -53,6 +53,7 @@ public class Runtime : RuntimeRefMut, IDisposable
         SetGameTimeDelegate setGameTime,
         Action pauseGameTime,
         Action resumeGameTime,
+        SetTimingMethodDelegate setTimingMethod,
         SetCustomVariableDelegate setCustomVariable,
         LogDelegate log
     ) : base(IntPtr.Zero)
@@ -74,6 +75,7 @@ public class Runtime : RuntimeRefMut, IDisposable
             setGameTime,
             pauseGameTime,
             resumeGameTime,
+            setTimingMethod,
             setCustomVariable,
             log
         );
@@ -713,6 +715,7 @@ public delegate int StateDelegate();
 public delegate int IndexDelegate();
 public delegate int SegmentSplittedDelegate(int idx);
 public delegate void SetGameTimeDelegate(long gameTime);
+public delegate void SetTimingMethodDelegate(uint method);
 public delegate void SetCustomVariableDelegate(IntPtr namePtr, UIntPtr nameLen, IntPtr valuePtr, UIntPtr valueLen);
 public delegate void LogDelegate(IntPtr messagePtr, UIntPtr messageLen);
 
@@ -733,6 +736,7 @@ public static class ASRNative
         SetGameTimeDelegate set_game_time,
         Action pause_game_time,
         Action resume_game_time,
+        SetTimingMethodDelegate set_timing_method,
         SetCustomVariableDelegate set_custom_variable,
         LogDelegate log
     );
