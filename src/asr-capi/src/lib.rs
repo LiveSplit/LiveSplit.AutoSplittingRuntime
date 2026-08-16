@@ -60,6 +60,7 @@ pub struct CTimer {
     resume_game_time: unsafe extern "C" fn(),
     set_custom_variable: unsafe extern "C" fn(*const u8, usize, *const u8, usize),
     log: unsafe extern "C" fn(*const u8, usize),
+    get_splits_path: unsafe extern "C" fn() -> *const u8,
 }
 
 #[cfg(target_pointer_width = "64")]
@@ -140,6 +141,19 @@ impl Timer for CTimer {
 
     fn log_runtime(&mut self, message: fmt::Arguments<'_>, _: LogLevel) {
         log(self.log, message);
+    }
+
+    fn splits_path(&self) -> Option<std::path::PathBuf> {
+        let ptr = unsafe { (self.get_splits_path)() };
+        if ptr.is_null() {
+            return None;
+        }
+        let s = unsafe { str(ptr) };
+        if s.is_empty() {
+            None
+        } else {
+            Some(std::path::PathBuf::from(s))
+        }
     }
 }
 
